@@ -1,0 +1,37 @@
+.footerContainer {
+  background-image: linear-gradient(
+    to right,
+    #000000,
+    #0d0e0f,
+    #15191f,
+    #1a2128
+  );
+  margin: 0;
+  padding: 5px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.footerIconImg {
+  width: 100px;
+  height: 100px;
+  margin-top: 20px;
+}
+
+.footerTextEnd {
+  text-align: center;
+}
+
+.footerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.footerList li {
+  padding: 5px 20px;
+}
