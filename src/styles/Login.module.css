@@ -1,3 +1,5 @@
+@import url("./vars.css");
+
 .container {
   height: 100vh;
   display: flex;
@@ -24,7 +26,7 @@
 }
 
 .textError {
-  color: red;
+  color: var(--color-error);
   font-weight: bold;
 }
 
@@ -36,7 +38,7 @@
 .loginForm {
   display: flex;
   flex-direction: column;
-  background-color: #dedede;
+  background-color: var(--color-form-box);
   justify-content: center;
   align-items: center;
   border-radius: 20px;
@@ -76,16 +78,7 @@
 .loginForm button {
   border: none;
   padding: 5px 15px;
-  background-image: linear-gradient(
-    45deg,
-    #f9c823,
-    #fab430,
-    #faa03c,
-    #fb8c49,
-    #fb7855,
-    #fc6462,
-    #fc506e
-  );
+  background-image: var(--gradient-button);
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
