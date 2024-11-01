@@ -10,8 +10,16 @@ import MapDisplay from "./components/MapDisplay";
 // import supabase from "./data/supabaseClient";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-  const loginValue = { isLoggedIn, setIsLoggedIn };
+  // Gets the login state from the local storage, if not exist, return false
+  const [isLoggedIn, setIsLoggedIn] = React.useState(() => {
+    if (localStorage.getItem('isLoggedIn') === null)
+      return false;
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+  const [isRememberedMe, setIsRememberedMe] = React.useState(false);
+
+  // Pass the loginValue to the login provider (for authentication)
+  const loginValue = { isLoggedIn, setIsLoggedIn, isRememberedMe, setIsRememberedMe };
   return (
     <LoginState.Provider value={loginValue}>
       <div style={{ fontFamily: "sans-serif" }}>
@@ -36,48 +44,5 @@ function App() {
     </LoginState.Provider>
   );
 }
-
-// function App() {
-//   const [fetchError, setFetchError] = React.useState<string | null>(null);
-//   const [Authentication, setAuthentication] = React.useState<any[] | null>(null);
-
-//   React.useEffect(() => {
-//     const fetchAuthentication = async () => {
-//       const { data, error } = await supabase
-//         .from('authentication')
-//         .select('*');
-
-//       if (error) {
-//         setFetchError('Could not fetch the authentication data');
-//         setAuthentication(null);
-//         console.log(error);
-//       }
-//       if (data) {
-//         setAuthentication(data);
-//         setFetchError(null);
-//       }
-//     };
-
-//     fetchAuthentication();
-//   }, []);
-
-//   return (
-//     <div>
-//       Hello
-//       {fetchError && (<p>{fetchError}</p>)}
-//       {Authentication && (
-//         <div>
-//           {Authentication.map((user, index) => (
-//             <div key={index}>
-//               <p>Email: {user.email}</p>
-//               <p>Username: {user.username}</p>
-//               <p>Password: {user.password}</p>
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 
 export default App;

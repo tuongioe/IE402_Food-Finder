@@ -11,20 +11,21 @@ interface loginField {
     password: string,
 }
 
-// Update for saving authentication into localStorage later
+// Update for saving authentication into localStorage later: DONE
 export default function Login() {
     const navigate = useNavigate();
-    const { isLoggedIn, setIsLoggedIn } = React.useContext(LoginState);
+    const { setIsLoggedIn } = React.useContext(LoginState);
     const [seenPassword, setSeenPassword] = React.useState(false);
-    const [raiseError, setRaiseError] = React.useState(false);
+    const [raiseError, setRaiseError] = React.useState('');
     const [fieldInput, setFieldInput] = React.useState<loginField>({
         email: "",
         password: "",
     });
+    const [rememberMe, setRememberMe] = React.useState(false);
 
     // Handles the field input from the user
     const handleFieldInput = (keyInput: keyof loginField, value: string) => {
-        if (raiseError) setRaiseError(false);
+        if (raiseError) setRaiseError('');
         setFieldInput((prev) => ({
             ...prev,
             [keyInput]: value,
@@ -37,23 +38,34 @@ export default function Login() {
         event.preventDefault();
         const { data, error } = await supabase
             .from('authentication')
-            .select('email, password')
+            .select('email, username, password')
             .eq('email', fieldInput.email)
             .eq('password', fieldInput.password);
 
         // Returns an error if the client can't fetch the database
         if (error) {
             console.log("ERROR! Cannot fetch the data from the server!");
+            setRaiseError('A problem occurred. Please try again later!');
             return;
         }
         // Gets the data and check whether the data exists or not
         // Sets the global state for isLoggedIn to 1 if data is not empty
         if (data.length) {
+            const usernameField = data[0].username;
             setIsLoggedIn(true);
+            if (rememberMe) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('username', usernameField);
+            }
+            else {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('username', usernameField);
+            }
+            // Save the info into the localStorage
             navigate("/");
         }
         else {
-            setRaiseError(true);
+            setRaiseError('Invalid username or password!');
         }
     };
 
@@ -68,6 +80,7 @@ export default function Login() {
                         <div className={styles.inputText}>
                             <label htmlFor="email">Email</label>
                             <input
+                                required
                                 type="email"
                                 name="email"
                                 placeholder="Email"
@@ -77,6 +90,7 @@ export default function Login() {
                         <div className={styles.inputText} style={{ position: "relative" }}>
                             <label htmlFor="password">Password</label>
                             <input
+                                required
                                 type={seenPassword ? "text" : "password"}
                                 name="password"
                                 placeholder="Password"
@@ -97,13 +111,13 @@ export default function Login() {
                         </div>
                         <div className={styles.inputOption}>
                             <div className={styles.inputCheckBoxRemember}>
-                                <input type="checkbox" name="rememberMe" />
+                                <input type="checkbox" name="rememberMe" onChange={(event) => setRememberMe(event.target.checked)} />
                                 <label htmlFor="rememberMe">Remember Me</label>
                             </div>
                             <Link to="/recoveraccount">Forgot Password?</Link>
                         </div>
                     </div>
-                    {raiseError && <p className={styles.textError}>Incorrect username or password! Please try again.</p>}
+                    {raiseError && <p className={styles.textError}>{raiseError}</p>}
                     <button>Sign In</button>
                     <p>Don't have an account? <Link to="/signup">Sign Up</Link></p>
                 </form>
