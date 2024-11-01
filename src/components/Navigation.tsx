@@ -9,7 +9,6 @@ export default function Navigation() {
                 <img src={logo} className={styles.navIconImg} />
             </Link>
             <ul className={styles.navController}>
-                <li><Link to="/" className={styles.navLink}>Home</Link></li>
                 <li><Link to="/login" className={styles.navLink}>Login</Link></li>
                 <li><Link to="/signup" className={styles.navLink}>Sign Up</Link></li>
             </ul>
