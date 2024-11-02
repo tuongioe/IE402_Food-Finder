@@ -26,7 +26,7 @@ function App() {
         <Routes>
           {isLoggedIn ?
             <>
-              <Route path="/" element={<MapDisplay />} />
+              <Route path="/maps" element={<MapDisplay />} />
               <Route path="*" element={<NotFound404 />} />
 
             </>

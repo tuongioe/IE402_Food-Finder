@@ -21,7 +21,6 @@ export default function Login() {
         email: "",
         password: "",
     });
-    const [rememberMe, setRememberMe] = React.useState(false);
 
     // Handles the field input from the user
     const handleFieldInput = (keyInput: keyof loginField, value: string) => {
@@ -52,17 +51,11 @@ export default function Login() {
         // Sets the global state for isLoggedIn to 1 if data is not empty
         if (data.length) {
             const usernameField = data[0].username;
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('username', usernameField);
             setIsLoggedIn(true);
-            if (rememberMe) {
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('username', usernameField);
-            }
-            else {
-                sessionStorage.setItem('isLoggedIn', 'true');
-                sessionStorage.setItem('username', usernameField);
-            }
             // Save the info into the localStorage
-            navigate("/");
+            navigate("/maps");
         }
         else {
             setRaiseError('Invalid username or password!');
@@ -110,10 +103,6 @@ export default function Login() {
                             </span>
                         </div>
                         <div className={styles.inputOption}>
-                            <div className={styles.inputCheckBoxRemember}>
-                                <input type="checkbox" name="rememberMe" onChange={(event) => setRememberMe(event.target.checked)} />
-                                <label htmlFor="rememberMe">Remember Me</label>
-                            </div>
                             <Link to="/recoveraccount">Forgot Password?</Link>
                         </div>
                     </div>
