@@ -71,9 +71,13 @@
 .signUpContainer button {
   border: none;
   margin-top: 10px;
-  padding: 5px 15px;
-  background-image: var(--gradient-button);
+  padding: 5px 50px;
+  background-color: #ffffff;
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+}
+
+.signUpContainer button:hover {
+  background-image: var(--gradient-button);
 }

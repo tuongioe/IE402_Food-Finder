@@ -26,7 +26,7 @@ function App() {
         <Routes>
           {isLoggedIn ?
             <>
-              <Route path="/maps" element={<MapDisplay />} />
+              <Route path="/maps" element={<MapDisplay apikey={import.meta.env.VITE_MAPBOX_API_KEY} />} />
               <Route path="*" element={<NotFound404 />} />
 
             </>

@@ -78,9 +78,13 @@
 
 .loginForm button {
   border: none;
-  padding: 5px 15px;
-  background-image: var(--gradient-button);
+  padding: 5px 50px;
+  background-color: white;
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+}
+
+.loginForm button:hover {
+  background-image: var(--gradient-button);
 }
