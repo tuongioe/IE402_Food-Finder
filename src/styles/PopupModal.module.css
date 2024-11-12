@@ -1,0 +1,96 @@
+@import url("./vars.css");
+
+.backgroundContainer {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.modalContainer {
+  position: fixed;
+  color: white;
+  background-color: var(--color-modal-box);
+  border-radius: 10px;
+  width: 500px;
+  z-index: 2;
+  animation: zoom-in 0.5s;
+}
+
+.modalTitle {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--color-modal-border);
+}
+
+.modalDesc {
+  text-align: center;
+  padding: 10px;
+  line-height: 24px;
+  margin: 10px;
+  border-bottom: 1px solid var(--color-modal-border);
+}
+
+.modalCloseIcon {
+  position: absolute;
+  font-size: 40px;
+  right: 0;
+  margin: 10px;
+  cursor: pointer;
+}
+
+.modalBtnClose {
+  border: none;
+  color: var(--color-modal-button-primary);
+  margin: 10px;
+  padding: 5px 15px;
+  background-color: transparent;
+  border: 2px solid var(--color-modal-button-primary);
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition-duration: var(--transition-modal-button-time);
+}
+
+.modalBtnClose:hover {
+  transform: scale(1.1);
+  transition-duration: var(--transition-modal-button-time);
+}
+
+.modalBtnConfirm {
+  border: none;
+  color: var(--color-modal-button-secondary);
+  margin: 10px;
+  padding: 5px 15px;
+  background-color: var(--color-modal-button-primary);
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition-duration: var(--transition-modal-button-time);
+}
+
+.modalBtnConfirm:hover {
+  transform: scale(1.1);
+  transition-duration: var(--transition-modal-button-time);
+}
+
+.modalBtnContainer {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+@keyframes zoom-in {
+  0% {
+    transform: scale(0);
+  }
+}
