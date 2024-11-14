@@ -1,0 +1,40 @@
+.navContainer {
+  display: flex;
+  background-color: white;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.navIconImg {
+  width: 160px;
+  height: 60px;
+  margin-left: 50px;
+}
+
+.navController {
+  display: flex;
+  list-style: none;
+  margin-right: 25px;
+}
+
+.navController li {
+  margin: 0 20px;
+  font-family: "Roboto", sans-serif;
+  font-size: 20px;
+}
+
+.navLink {
+  color: black;
+  text-decoration: none;
+  padding: 5px 0px;
+  font-size: 16px;
+  font-weight: bolder;
+  width: 100px;
+  height: auto;
+  border-bottom: 3px solid transparent; /* Set a transparent border initially */
+}
+
+.navLink:hover {
+  border-bottom: 3px solid black; /* This will show the bottom border on hover */
+}

@@ -1,0 +1,24 @@
+:root {
+  --transition-duration-time: 0.2;
+  --color-error: #f00;
+  --gradient-button: linear-gradient(
+    45deg,
+    #f9c823,
+    #fab430,
+    #faa03c,
+    #fb8c49,
+    #fb7855,
+    #fc6462,
+    #fc506e
+  );
+  --color-modal-border: #ffffff;
+  --color-modal-box: #31a6d1;
+  --color-modal-button-primary: #ffffff;
+  --color-modal-button-secondary: #31a6d1;
+  --transition-modal-button-time: 0.3s;
+  --color-form-box: #dedede;
+  --color-notfound-box: #31a6d1;
+  --color-notfound-text: #ffffff;
+  --color-notfound-link: #0000ff;
+  --color-map-nav: #dedede;
+}

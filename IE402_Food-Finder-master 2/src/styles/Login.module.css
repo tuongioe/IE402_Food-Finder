@@ -1,0 +1,102 @@
+@import url("./vars.css");
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginContainer {
+  margin: auto;
+  padding: 5px 10px;
+  width: 500px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  font-family: "Roboto", sans-serif;
+  position: relative;
+}
+
+.textHeader {
+  position: absolute;
+  left: 13.5rem;
+  top: 35px;
+  font-family: "Roboto", sans-serif;
+  font-size: 40px;
+  color: white;
+}
+
+.textError {
+  color: var(--color-error);
+  font-weight: bold;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  background-image: linear-gradient(to right, #51a7bf, #daf4ff);
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+  padding: 0;
+  margin-top: 30px;
+  padding-top: 30px;
+  height: 400px;
+}
+
+.inputSection {
+  width: 62%;
+}
+
+.inputText {
+  display: flex;
+  flex-direction: column;
+  padding-top: 18px;
+}
+
+.inputText input {
+  border-radius: 10px;
+  border: none;
+  padding: 5px 15px;
+  font-size: 20px;
+  height: 40px;
+  width: 300px;
+  background-image: linear-gradient(to left, #05999e, #cbe7e3);
+}
+
+.inputText label {
+  font-size: 16px;
+}
+
+.loginContainer button {
+  border: none;
+  margin-top: 15px;
+  padding: 5px 50px;
+  background-image: linear-gradient(to right, #00717f, #00a8a8);
+  border-radius: 10px;
+  font-size: 25px;
+  cursor: pointer;
+  height: 50px;
+  width: 330px;
+  margin-left: 20px;
+  font-family: "Roboto", sans-serif;
+  color: #ffffff; /* Text color for better contrast */
+}
+
+.loginContainer button:hover {
+  filter: brightness(90%);
+}
+
+.textFont {
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+  margin-top: 25px;
+}
+
+.inputOption {
+  font-family: "Roboto", sans-serif;
+  margin-top: 10px;
+  float: right;
+}

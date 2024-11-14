@@ -1,0 +1,242 @@
+@import url("./vars.css");
+
+#root {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.sidebar {
+  background-color: rgb(35 55 75 / 90%);
+  color: #fff;
+  padding: 6px 12px;
+  font-family: monospace;
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 12px;
+  border-radius: 4px;
+}
+
+.reset-button {
+  position: absolute;
+  top: 50px;
+  z-index: 1;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.componentContainer {
+  width: 100%;
+  position: fixed;
+  z-index: 1;
+}
+
+.logoMap {
+  width: 160px;
+  height: 60px;
+}
+
+.topNav {
+  margin: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topLeftNav {
+  padding: 10px;
+  background-color: white;
+
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.searchBarContainer {
+  display: flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  margin-left: 50px;
+}
+
+.searchBarInput {
+  padding: 5px 10px;
+  font-size: 16px;
+  border-radius: 10px 5px 5px 10px;
+  border: 1px solid #dedede;
+  width: 400px;
+}
+
+.searchBarInput:focus {
+  outline: none;
+}
+
+.searchBarButton {
+  border: 1px solid #dedede;
+  background-color: #ffffff;
+  padding: 6.5px;
+  border-radius: 0 10px 10px 0;
+  border-left: 0;
+  cursor: pointer;
+}
+
+.geoButtonMyLocation {
+  margin: 10px;
+  padding: 5px;
+  font-size: 24px;
+  background-color: #f5f5f5;
+  border: none;
+  box-shadow: 1px 1px 2px 1px #555555;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.geoButtonMyLocation:hover {
+  opacity: 0.8;
+}
+
+.topRightNav {
+  padding: 10px;
+  border-radius: 20px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.userSettingText {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 100%;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.userSettingContainer {
+  position: absolute;
+  display: box;
+  text-align: center;
+  width: 150px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  margin-top: 5px;
+  top: 60px;
+  right: 0;
+}
+
+.userSettingHeader {
+  font-weight: bold;
+  font-size: 24px;
+  margin: 0;
+  padding: 10px;
+  font-family: "Roboto", sans-serif;
+}
+
+.userSettingOption1 {
+  margin: 5px;
+  padding: 10px;
+  background-image: linear-gradient(to right, #e4dfd9, #e4c7b7);
+  border-radius: 20px;
+  color: white;
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+}
+.userSettingOption2 {
+  margin: 5px;
+  padding: 10px;
+  background-image: linear-gradient(to right, #c73866, #fe676e);
+  cursor: pointer;
+  border-radius: 20px;
+  color: white;
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+}
+
+.userSettingOption1:hover {
+  filter: brightness(90%);
+}
+.userSettingOption2:hover {
+  filter: brightness(90%);
+}
+
+@media screen and (min-width: 320px) {
+  .searchBarContainer {
+    margin-left: 5px;
+  }
+  .searchBarInput {
+    width: 150px;
+  }
+  .userSettingContainer {
+    width: 100px;
+  }
+}
+
+@media screen and (min-width: 481px) {
+  .searchBarContainer {
+    margin-left: 10px;
+  }
+  .searchBarInput {
+    width: 200px;
+  }
+  .userSettingContainer {
+    width: 150px;
+  }
+}
+
+@media screen and (min-width: 641px) {
+  .searchBarContainer {
+    margin-left: 15px;
+  }
+  .searchBarInput {
+    width: 250px;
+  }
+  .userSettingContainer {
+    width: 200px;
+  }
+}
+
+@media screen and (min-width: 961px) {
+  .searchBarContainer {
+    margin-left: 20px;
+  }
+  .searchBarInput {
+    width: 300px;
+  }
+  .userSettingContainer {
+    width: 250px;
+  }
+}
+
+@media screen and (min-width: 1025px) {
+  .searchBarContainer {
+    margin-left: 30px;
+  }
+  .searchBarInput {
+    width: 350px;
+  }
+  .userSettingContainer {
+    width: 300px;
+  }
+}
+
+@media screen and (min-width: 1281px) {
+  .searchBarContainer {
+    margin-left: 50px;
+  }
+  .searchBarInput {
+    width: 400px;
+  }
+}
