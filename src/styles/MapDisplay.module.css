@@ -38,8 +38,8 @@
 }
 
 .logoMap {
-  width: 50px;
-  height: 50px;
+  width: 160px;
+  height: 60px;
 }
 
 .topNav {
@@ -52,7 +52,8 @@
 
 .topLeftNav {
   padding: 10px;
-  background-color: var(--color-map-nav);
+  background-color: white;
+
   border-radius: 20px;
   display: flex;
   justify-content: center;
@@ -70,7 +71,7 @@
 .searchBarInput {
   padding: 5px 10px;
   font-size: 16px;
-  border-radius: 10px 0 0 10px;
+  border-radius: 10px 5px 5px 10px;
   border: 1px solid #dedede;
   width: 400px;
 }
@@ -118,7 +119,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--color-map-nav);
+  background-color: #ffffff;
   border-radius: 100%;
   font-size: 24px;
   cursor: pointer;
@@ -128,8 +129,8 @@
   position: absolute;
   display: box;
   text-align: center;
-  width: 200px;
-  background-color: var(--color-map-nav);
+  width: 150px;
+  background-color: #ffffff;
   border-radius: 20px;
   margin-top: 5px;
   top: 60px;
@@ -141,19 +142,34 @@
   font-size: 24px;
   margin: 0;
   padding: 10px;
+  font-family: "Roboto", sans-serif;
 }
 
-.userSettingOption {
+.userSettingOption1 {
   margin: 5px;
   padding: 10px;
-  border: 2px solid #f9c823;
+  background-image: linear-gradient(to right, #e4dfd9, #e4c7b7);
+  border-radius: 20px;
+  color: white;
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+}
+.userSettingOption2 {
+  margin: 5px;
+  padding: 10px;
+  background-image: linear-gradient(to right, #c73866, #fe676e);
   cursor: pointer;
   border-radius: 20px;
+  color: white;
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
 }
 
-.userSettingOption:hover {
-  background-color: #d0d0d0;
-  border-radius: 20px;
+.userSettingOption1:hover {
+  filter: brightness(90%);
+}
+.userSettingOption2:hover {
+  filter: brightness(90%);
 }
 
 @media screen and (min-width: 320px) {

@@ -19,18 +19,49 @@
 .textContainer {
   text-align: center;
   color: black;
+  position: relative;
+  z-index: 1; /* Ensures text is above the background image */
+  display: flex;
+  flex-direction: column; /* Stack text lines vertically */
+  align-items: center; /* Center horizontally */
+  justify-content: center; /* Center vertically */
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink {
+  50% {
+    border-color: transparent;
+  }
+}
+
+.textIntro1,
+.textIntro2 {
+  font-family: "Roboto", sans-serif;
+  white-space: nowrap; /* Prevents text wrapping */
+  overflow: hidden; /* Hides text until animated */
+  border-right: 2px solid black; /* Creates a "cursor" effect */
+  animation: typing 3s steps(30, end), blink 0.7s step-end infinite; /* Typing and cursor blink animation */
 }
 
 .textIntro1 {
   font-size: 40px;
   font-weight: bold;
-  position: relative;
   margin: 0;
   padding: 20px;
+  animation-duration: 3s; /* Duration for first line */
 }
 
 .textIntro2 {
   font-size: 24px;
-  position: relative;
   margin: 0;
+  animation-delay: 3.5s; /* Delay for the second line to start after the first */
+  animation-duration: 4s; /* Duration for second line */
 }

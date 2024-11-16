@@ -1,17 +1,16 @@
-import React from 'react';
-import styles from '../styles/SignUp.module.css';
-import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa6';
-import { Link, useNavigate } from 'react-router-dom';
-import logo from "../assets/logo.png"
+import React from "react";
+import styles from "../styles/SignUp.module.css";
+import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
+import { Link, useNavigate } from "react-router-dom";
 
-import supabase from '../data/supabaseClient';
-import PopupModal from './PopupModal';
+import supabase from "../data/supabaseClient";
+import PopupModal from "./PopupModal";
 
 interface signUpProp {
-    username: string,
-    email: string,
-    password: string,
-    confirmPassword: string,
+    username: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
 }
 
 export default function SignUp() {
@@ -24,55 +23,53 @@ export default function SignUp() {
         password: "",
         confirmPassword: "",
     });
-    const [raiseError, setRaiseError] = React.useState('');
+    const [raiseError, setRaiseError] = React.useState("");
     const [signUpSuccess, setSignUpSuccess] = React.useState(false);
 
     const handleFieldInput = (keyValue: keyof signUpProp, value: string) => {
-        if (raiseError) setRaiseError('');
+        if (raiseError) setRaiseError("");
         setFieldInput((prev) => ({
             ...prev,
             [keyValue]: value,
         }));
-    }
+    };
 
     const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         const insertSelection = async () => {
-            const { error } = await supabase
-                .from('authentication')
-                .insert({
-                    email: fieldInput.email,
-                    username: fieldInput.username,
-                    password: fieldInput.password,
-                });
+            const { error } = await supabase.from("authentication").insert({
+                email: fieldInput.email,
+                username: fieldInput.username,
+                password: fieldInput.password,
+            });
             return error;
-        }
+        };
 
         // Handles the logic for creating a new account
         // Opens the database to check if the email already exists or not
         const checkSelection = async () => {
             const { data, error } = await supabase
-                .from('authentication')
-                .select('email')
-                .eq('email', fieldInput.email);
+                .from("authentication")
+                .select("email")
+                .eq("email", fieldInput.email);
             return { data, error };
-        }
+        };
 
         const { data, error } = await checkSelection();
         // Returns an error if database cannot be connected
         if (error) {
-            setRaiseError('A problem occurred! Please try again later.');
+            setRaiseError("A problem occurred! Please try again later.");
             return;
         }
         // An email already exists, abort the sign up operation
         if (data !== null && data.length) {
-            setRaiseError('Email existed! Please try with another email');
+            setRaiseError("Email existed! Please try with another email");
             return;
         }
         // If an email does not exist on database, checking for password logic before creating account
         if (fieldInput.password !== fieldInput.confirmPassword) {
-            setRaiseError('Password does not match!');
+            setRaiseError("Password does not match!");
             return;
         }
         // If password matches, start inserting the data into the database
@@ -87,48 +84,52 @@ export default function SignUp() {
 
     return (
         <div className={styles.container}>
-            {signUpSuccess && <PopupModal
-                title="SIGN UP SUCCESSFULLY"
-                desc="You have created account successfully. Redirecting back to login page..."
-                display={signUpSuccess ? true : false} />
-            }
+            {signUpSuccess && (
+                <PopupModal
+                    title="SIGN UP SUCCESSFULLY"
+                    desc="You have created account successfully. Redirecting back to login page..."
+                    display={signUpSuccess ? true : false}
+                />
+            )}
             <div className={styles.signUpContainer}>
                 <h1 className={styles.textHeader}>Sign Up</h1>
                 <form className={styles.signUpForm} onSubmit={handleSignUp}>
-                    <img src={logo} className={styles.signUpImgIcon} />
                     <div className={styles.inputSection}>
                         <div className={styles.inputText}>
-                            <label htmlFor="username">Username</label>
                             <input
                                 required
                                 type="text"
                                 name="username"
                                 placeholder="Username"
-                                onChange={(event) => handleFieldInput('username', event.target.value)}
+                                onChange={(event) =>
+                                    handleFieldInput("username", event.target.value)
+                                }
                             />
                         </div>
                         <div className={styles.inputText}>
-                            <label htmlFor="email">Email</label>
                             <input
                                 required
                                 type="email"
                                 name="email"
                                 placeholder="Email"
-                                onChange={(event) => handleFieldInput('email', event.target.value)}
+                                onChange={(event) =>
+                                    handleFieldInput("email", event.target.value)
+                                }
                             />
                         </div>
                         <div className={styles.inputText} style={{ position: "relative" }}>
-                            <label htmlFor="password">Password</label>
                             <input
                                 required
                                 type={seenPassword ? "text" : "password"}
                                 name="password"
                                 placeholder="Password"
-                                onChange={(event) => handleFieldInput('password', event.target.value)}
+                                onChange={(event) =>
+                                    handleFieldInput("password", event.target.value)
+                                }
                             />
                             <span
                                 onClick={() => {
-                                    setSeenPassword((currState) => !(currState));
+                                    setSeenPassword((currState) => !currState);
                                 }}
                                 style={{
                                     position: "absolute",
@@ -137,21 +138,26 @@ export default function SignUp() {
                                     cursor: "pointer",
                                 }}
                             >
-                                {seenPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                                {seenPassword ? (
+                                    <FaRegEye size={24} />
+                                ) : (
+                                    <FaRegEyeSlash size={24} />
+                                )}
                             </span>
                         </div>
                         <div className={styles.inputText} style={{ position: "relative" }}>
-                            <label htmlFor="passwordConfirm">Confirm Password</label>
                             <input
                                 required
                                 type={seenConfirmPassword ? "text" : "password"}
                                 name="passwordConfirm"
                                 placeholder="Confirm Password"
-                                onChange={(event) => handleFieldInput('confirmPassword', event.target.value)}
+                                onChange={(event) =>
+                                    handleFieldInput("confirmPassword", event.target.value)
+                                }
                             />
                             <span
                                 onClick={() => {
-                                    setSeenConfirmPassword((currState) => !(currState));
+                                    setSeenConfirmPassword((currState) => !currState);
                                 }}
                                 style={{
                                     position: "absolute",
@@ -160,15 +166,24 @@ export default function SignUp() {
                                     cursor: "pointer",
                                 }}
                             >
-                                {seenConfirmPassword ? <FaRegEyeSlash /> : <FaRegEye />}
+                                {seenConfirmPassword ? (
+                                    <FaRegEye size={24} />
+                                ) : (
+                                    <FaRegEyeSlash size={24} />
+                                )}
                             </span>
                         </div>
                     </div>
                     {raiseError && <p className={styles.textError}>{raiseError}</p>}
-                    <button>Sign Up</button>
-                    <p>Already have an account? <Link to="/login">Log In</Link></p>
+                    <button>Register</button>
+                    <p className={styles.textFont}>
+                        Already have an account?{" "}
+                        <Link to="/login" style={{ textDecoration: "none" }}>
+                            Login
+                        </Link>
+                    </p>
                 </form>
             </div>
         </div>
-    )
+    );
 }
