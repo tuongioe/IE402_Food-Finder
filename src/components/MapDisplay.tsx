@@ -7,9 +7,26 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { SearchBox } from '@mapbox/search-js-react';
 import { MdMyLocation } from 'react-icons/md';
+import supabase from '../data/supabaseClient';
 
-const dataset: any = [];
-
+interface Restaurant {
+  title: string;
+  price: string | null;
+  categoryName: string;
+  address: string;
+  neighborhood: string;
+  street: string;
+  city: string;
+  state: string;
+  countryCode: string;
+  phone: string | null;
+  phoneUnformatted: string | null;
+  latitude: number;
+  longitude: number;
+  plusCode: string;
+  totalScore: number | null;
+  imageUrl: string;
+}
 
 const INITIAL_CENTER = [
   106.6707418, 10.8546639
@@ -74,7 +91,7 @@ const ButtonGeolocation = ({ mapRef }: { mapRef?: React.MutableRefObject<any> })
 
 export default function MapDisplay({ apikey }: { apikey: string }) {
   const navigate = useNavigate();
-  const mapRef = React.useRef();
+  const mapRef = React.useRef<undefined | any>();
   const mapContainerRef = React.useRef();
   const [, setMapLoaded] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
@@ -82,7 +99,32 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   const { setIsLoggedIn } = React.useContext(LoginState);
   const [center, setCenter] = React.useState(INITIAL_CENTER);
   const [zoom, setZoom] = React.useState(INITIAL_ZOOM);
+  const [dataset, setDataset] = React.useState<Restaurant[]>([]);
 
+  const getData = async () => {
+    const { data, error } = await supabase
+      .from('gisdata')
+      .select();
+    if (error) {
+      console.log("ERROR: ", error);
+      return null;
+    }
+    else {
+      return data;
+    }
+  };
+
+  // Fetch the data
+  React.useEffect(() => {
+    const fetchData = async () => {
+      const data = await getData();
+      if (data) {
+        setDataset(data as Restaurant[]);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   React.useEffect(() => {
     mapboxgl.accessToken = apikey;
@@ -101,10 +143,37 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setZoom(mapZoom);
     });
 
+
     mapRef.current.on('load', () => {
+      const geojsonData = {
+        type: 'FeatureCollection',
+        features: dataset.map((restaurant: { longitude: any; latitude: any; title: any; price: any; categoryName: any; address: any; neighborhood: any; street: any; city: any; state: any; countryCode: any; phone: any; phoneUnformatted: any; totalScore: any; imageUrl: any; }) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [restaurant.longitude, restaurant.latitude], // [longitude, latitude]
+          },
+          properties: {
+            title: restaurant.title,
+            price: restaurant.price,
+            categoryName: restaurant.categoryName,
+            address: restaurant.address,
+            neighborhood: restaurant.neighborhood,
+            street: restaurant.street,
+            city: restaurant.city,
+            state: restaurant.state,
+            countryCode: restaurant.countryCode,
+            phone: restaurant.phone,
+            phoneUnformatted: restaurant.phoneUnformatted,
+            totalScore: restaurant.totalScore,
+            imageUrl: restaurant.imageUrl,
+          }
+        }))
+      };
+
       mapRef.current.addSource('restaurant', {
         type: 'geojson',
-        data: dataset,
+        data: geojsonData,
       });
       mapRef.current.addLayer({
         id: 'restaurant-layer',
@@ -120,17 +189,27 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setMapLoaded(true);
     });
 
-    mapRef.current.on('click', 'restaurant-layer', (e) => {
+    mapRef.current.on('click', 'restaurant-layer', (e: any) => {
       const features = mapRef.current.queryRenderedFeatures(e.point, {
         layers: ['restaurant-layer']
       });
 
       if (features.length) {
         const feature = features[0];
-        const { title, description } = feature.properties;
+        const { title, price, categoryName, address, phone, imageUrl, totalScore } = feature.properties;
+
+        const fallbackImageUrl = "https://via.placeholder.com/150";
+
         const popup = new mapboxgl.Popup()
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${title}</strong><p>${description}</p>`)
+          .setHTML(`
+              <strong>${title}</strong><br>
+            <em>Category:</em> ${categoryName || 'Not available'}<br>
+            <em>Price:</em> ${price || 'Not available'}<br>
+            <em>Address:</em> ${address || 'Not available'}<br>
+            <em>Phone:</em> ${phone || 'Not available'}<br>
+            ${totalScore ? `<strong>Rating:</strong> ${totalScore} ⭐<br>` : ''}
+          `)
           .addTo(mapRef.current);
       }
 
