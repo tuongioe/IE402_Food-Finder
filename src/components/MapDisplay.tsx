@@ -7,41 +7,12 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { SearchBox } from '@mapbox/search-js-react';
 import { MdMyLocation } from 'react-icons/md';
-import ReactMapGL from 'react-map-gl';
 
-// Sample dataset
-const dataset = {
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-77.0369, 38.9072]
-      },
-      "properties": {
-        "title": "Washington, D.C.",
-        "description": "The capital of the United States."
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-74.0060, 40.7128]
-      },
-      "properties": {
-        "title": "New York City",
-        "description": "The largest city in the United States."
-      }
-    }
-  ]
-};
+const dataset: any = [];
 
 
 const INITIAL_CENTER = [
-  // 106.6707418, 10.8546639
-  -77.0369, 38.9072
+  106.6707418, 10.8546639
 ];
 const INITIAL_ZOOM = 10.12;
 
