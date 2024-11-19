@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { LoginState } from '../data/context';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { SearchBox } from '@mapbox/search-js-react';
-import { MdMyLocation } from 'react-icons/md';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
 import supabase from '../data/supabaseClient';
 
 interface Restaurant {
@@ -33,68 +33,11 @@ const INITIAL_CENTER = [
 ];
 const INITIAL_ZOOM = 10.12;
 
-const ButtonGeolocation = ({ mapRef }: { mapRef?: React.MutableRefObject<any> }) => {
-
-  const customElement = () => {
-    const markerElement = document.createElement('div');
-    markerElement.style.backgroundImage = 'url(./src/assets/userLocation.png)';
-    markerElement.style.backgroundSize = 'contain';
-    markerElement.style.width = '40px';
-    markerElement.style.height = '40px';
-    markerElement.style.borderRadius = '50%';
-    return markerElement;
-  }
-
-  const handleGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-
-          if (mapRef?.current) {
-            mapRef.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 14,
-              essential: true
-            });
-
-
-            const userLocationMarker = new mapboxgl.Marker({
-              element: customElement(),
-            })
-              .setLngLat([longitude, latitude])
-              .addTo(mapRef.current);
-          }
-        },
-        (error) => {
-          console.log('Error getting geolocation: ', error);
-          alert('Unable to retrieve your location.');
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 10000,
-          timeout: 5000,
-        }
-      );
-    }
-    else {
-      alert('Geolocation is not supported by this browser.');
-    }
-  }
-
-  return (
-    <div className={styles.geoButtonMyLocation} onClick={handleGeolocation}>
-      <MdMyLocation />
-    </div>
-  );
-};
-
 export default function MapDisplay({ apikey }: { apikey: string }) {
   const navigate = useNavigate();
   const mapRef = React.useRef<undefined | any>();
   const mapContainerRef = React.useRef();
   const [, setMapLoaded] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
   const [userSetting, setUserSetting] = React.useState(false);
   const { setIsLoggedIn } = React.useContext(LoginState);
   const [center, setCenter] = React.useState(INITIAL_CENTER);
@@ -143,6 +86,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setZoom(mapZoom);
     });
 
+    // Manage popup
+    let currentPopup: mapboxgl.Popup | null = null;
 
     mapRef.current.on('load', () => {
       const geojsonData = {
@@ -171,6 +116,67 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         }))
       };
 
+      // Add MapboxGeocoder with localGeocoder
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        zoom: 14,
+        placeholder: 'Search restaurant',
+        localGeocoder: (query: string) => {
+          const matchingFeatures = geojsonData.features.filter((feature) =>
+            feature.properties.title.toLowerCase().includes(query.toLowerCase())
+          );
+
+          return matchingFeatures.map((feature) => ({
+            center: feature.geometry.coordinates,
+            geometry: feature.geometry,
+            place_name: `${feature.properties.title} - ${feature.properties.address || 'Address not available'}`,
+            text: feature.properties.title,
+            properties: feature.properties,
+            type: 'Feature',
+          }));
+        },
+        mapboxgl: mapboxgl,
+      });
+
+      mapRef.current.addControl(geocoder);
+
+      geocoder.on('result', (e) => {
+        const selectedFeature = e.result;
+
+        if (currentPopup) {
+          currentPopup.remove(); // Remove existing popup if any
+        }
+
+        if (selectedFeature && selectedFeature.geometry) {
+          const { coordinates } = selectedFeature.geometry;
+          const { title, address, categoryName, phone, totalScore } = selectedFeature.properties;
+
+          currentPopup = new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(`
+              <strong>${title}</strong><br>
+              <em>Category:</em> ${categoryName || 'Not available'}<br>
+              <em>Address:</em> ${address || 'Not available'}<br>
+              <em>Phone:</em> ${phone || 'Not available'}<br>
+              ${totalScore ? `<strong>Rating:</strong> ${totalScore} ⭐<br>` : ''}
+            `)
+            .addTo(mapRef.current);
+
+          mapRef.current.flyTo({
+            center: coordinates,
+            zoom: 14,
+          });
+        }
+      });
+
+      mapRef.current.on('mouseenter', 'restaurant-layer', () => {
+        mapRef.current.getCanvas().style.cursor = 'pointer';
+      });
+
+      mapRef.current.on('mouseleave', 'restaurant-layer', () => {
+        mapRef.current.getCanvas().style.cursor = '';
+      })
+
       mapRef.current.addSource('restaurant', {
         type: 'geojson',
         data: geojsonData,
@@ -186,6 +192,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
           'circle-stroke-color': 'white'
         }
       });
+
       setMapLoaded(true);
     });
 
@@ -198,9 +205,13 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         const feature = features[0];
         const { title, price, categoryName, address, phone, imageUrl, totalScore } = feature.properties;
 
+        if (currentPopup) {
+          currentPopup.remove(); // Remove existing popup if any
+        }
+
         const fallbackImageUrl = "https://via.placeholder.com/150";
 
-        const popup = new mapboxgl.Popup()
+        currentPopup = new mapboxgl.Popup()
           .setLngLat(e.lngLat)
           .setHTML(`
               <strong>${title}</strong><br>
@@ -221,7 +232,18 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
 
     mapRef.current.on('mouseleave', 'restaurant-layer', () => {
       mapRef.current.getCanvas().style.cursor = '';
-    })
+    });
+
+    // Add geolocate control to the map.
+    mapRef.current.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true
+        },
+        trackUserLocation: true,
+        showUserHeading: true
+      })
+    );
 
     return () => {
       mapRef.current.remove();
@@ -249,22 +271,6 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         <div className={styles.componentContainer}>
           <div className={styles.topNav}>
             <div className={styles.topLeftNav}>
-              <img src={logo} className={styles.logoMap} />
-              <div className={styles.searchBarContainer}>
-                <SearchBox
-                  accessToken={apikey}
-                  map={mapRef.current}
-                  mapboxgl={mapboxgl}
-                  value={inputValue}
-                  onChange={(d) => {
-                    setInputValue(d);
-                  }}
-                  marker
-                />
-              </div>
-              <ButtonGeolocation mapRef={mapRef} />
-            </div>
-            <div className={styles.topRightNav}>
               <span
                 onClick={() => {
                   setUserSetting(!userSetting);
@@ -282,6 +288,9 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                     navigate("/");
                   }}>Log out</p>
               </div>}
+              <img src={logo} className={styles.logoMap} />
+            </div>
+            <div className={styles.topRightNav}>
             </div>
           </div>
         </div>
