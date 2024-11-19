@@ -272,9 +272,9 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                 className={styles.userSettingText}>{getFirstLetterUsername()}</span>
               {userSetting && <div className={styles.userSettingContainer}>
                 <p className={styles.userSettingHeader}>Hello, {localStorage.getItem('username')}</p>
-                <p className={styles.userSettingOption}>Manage your account</p>
+                <p className={styles.userSettingOption1}>Manage your account</p>
                 <p
-                  className={styles.userSettingOption}
+                  className={styles.userSettingOption2}
                   onClick={() => {
                     localStorage.removeItem('username');
                     localStorage.removeItem('isLoggedIn');
