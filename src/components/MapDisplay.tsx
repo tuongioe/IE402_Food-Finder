@@ -37,6 +37,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   const navigate = useNavigate();
   const mapRef = React.useRef<undefined | any>();
   const mapContainerRef = React.useRef();
+  const geolocateControlRef = React.useRef<mapboxgl.GeolocateControl | null>(null);
   const [, setMapLoaded] = React.useState(false);
   const [userSetting, setUserSetting] = React.useState(false);
   const { setIsLoggedIn } = React.useContext(LoginState);
@@ -208,21 +209,58 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       mapRef.current.getCanvas().style.cursor = '';
     });
 
+    mapRef.current.on('click', 'restaurant-layer', (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
+      const features = mapRef.current.queryRenderedFeatures(e.point, {
+        layers: ['restaurant-layer'],
+      });
+
+      if (features.length) {
+        const feature = features[0];
+
+        const restaurant: Restaurant = {
+          title: feature.properties?.title || 'Unknown',
+          price: feature.properties?.price || null,
+          categoryName: feature.properties?.categoryName || 'Not available',
+          address: feature.properties?.address || 'Not available',
+          neighborhood: feature.properties?.neighborhood || 'Not available',
+          street: feature.properties?.street || 'Not available',
+          city: feature.properties?.city || 'Not available',
+          state: feature.properties?.state || 'Not available',
+          countryCode: feature.properties?.countryCode || 'Not available',
+          phone: feature.properties?.phone || 'Not available',
+          phoneUnformatted: feature.properties?.phoneUnformatted || null,
+          latitude: feature.geometry.coordinates[1],
+          longitude: feature.geometry.coordinates[0],
+          totalScore: feature.properties?.totalScore || null,
+          imageUrl: feature.properties?.imageUrl || '',
+          plusCode: '',
+        };
+
+        setSelectedRestaurant(restaurant);
+
+        mapRef.current.flyTo({
+          center: [restaurant.longitude, restaurant.latitude],
+          zoom: 14,
+        });
+      }
+    });
+
     // Add geolocate control to the map.
-    mapRef.current.addControl(
-      new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-      })
-    );
+    const geolocateControl = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
+      trackUserLocation: true,
+      showUserHeading: true
+    });
+
+    mapRef.current.addControl(geolocateControl, 'top-left');
+    geolocateControlRef.current = geolocateControl;
 
     return () => {
       mapRef.current.remove();
     }
-  }, []);
+  }, [dataset]);
 
 
   // Gets the first letter from the username and capitalizes it
@@ -230,6 +268,85 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     const str = localStorage.getItem('username');
     return str ? str.charAt(0).toUpperCase() : '';
   };
+
+  // Fetch direction
+  const getDirections = async (latitude: number, longitude: number) => {
+    const geolocateControl = geolocateControlRef.current;
+    if (!geolocateControl) {
+      console.error('GeolocateControl not initialized');
+      return;
+    }
+
+    if (selectedRestaurant === null)
+      return;
+
+    const userLocation = await new Promise<[number, number]>((resolve, reject) => {
+      geolocateControl.once('geolocate', (e) => {
+        resolve([e.coords.longitude, e.coords.latitude]);
+      });
+      geolocateControl.trigger(); // Trigger geolocation
+    });
+
+    const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation[0]},${userLocation[1]};${selectedRestaurant.longitude},${selectedRestaurant.latitude}?geometries=geojson&access_token=${apikey}`);
+    const data = await response.json();
+
+    if (data.routes && data.routes.length) {
+      const route = data.routes[0].geometry;
+
+      // Add or update the route source
+      if (mapRef.current?.getSource('route')) {
+        mapRef.current.getSource('route').setData({
+          type: 'Feature',
+          geometry: route,
+        });
+      } else {
+        mapRef.current?.addSource('route', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: route,
+          },
+        });
+
+        mapRef.current?.addLayer({
+          id: 'route',
+          type: 'line',
+          source: 'route',
+          layout: {
+            'line-cap': 'round',
+            'line-join': 'round',
+          },
+          paint: {
+            'line-color': '#4264fb',
+            'line-width': 5,
+          },
+        });
+      }
+
+      // Fit map bounds to route
+      const bounds = new mapboxgl.LngLatBounds();
+      route.coordinates.forEach(([lng, lat]: [number, number]) => bounds.extend([lng, lat]));
+      mapRef.current?.fitBounds(bounds, { padding: 20 });
+    } else {
+      console.error('No route found');
+    }
+  };
+
+  // Cancel direction
+  const cancelDirections = () => {
+    if (mapRef.current) {
+      // Check if the 'route' layer exists before trying to remove it
+      if (mapRef.current.getLayer('route')) {
+        mapRef.current.removeLayer('route');
+      }
+      // Check if the 'route' source exists before trying to remove it
+      if (mapRef.current.getSource('route')) {
+        mapRef.current.removeSource('route');
+      }
+    }
+  };
+
+
 
   return (
     <>
@@ -288,6 +405,18 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
               <p>
                 <strong>Rating:</strong> {selectedRestaurant.totalScore || 'Not available'} ⭐
               </p>
+              <button
+                className={styles.directionButton}
+                onClick={() => { getDirections(selectedRestaurant.latitude, selectedRestaurant.longitude) }}
+              >
+                Directions
+              </button>
+              <button
+                className={styles.cancelDirections}
+                onClick={cancelDirections}
+              >
+                Cancel Directions
+              </button>
             </div>
           </div>}
       </div>
