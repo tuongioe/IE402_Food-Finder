@@ -127,6 +127,29 @@
   filter: brightness(90%);
 }
 
+.sidebarContainer {
+  width: 300px;
+  height: 90vh;
+  top: 12vh;
+  background-color: white;
+  position: absolute;
+  z-index: 1;
+}
+
+.closeButton {
+  position: inherit;
+  right: 0;
+  border: none;
+  background-color: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  opacity: 0.8;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
 @media screen and (min-width: 320px) {
   .searchBarContainer {
     margin-left: 5px;
@@ -136,6 +159,9 @@
   }
   .userSettingContainer {
     width: 100px;
+  }
+  .sidebarContainer {
+    width: 200px;
   }
 }
 
@@ -149,6 +175,9 @@
   .userSettingContainer {
     width: 150px;
   }
+  .sidebarContainer {
+    width: 250px;
+  }
 }
 
 @media screen and (min-width: 641px) {
@@ -160,6 +189,9 @@
   }
   .userSettingContainer {
     width: 200px;
+  }
+  .sidebarContainer {
+    width: 300px;
   }
 }
 
@@ -173,6 +205,9 @@
   .userSettingContainer {
     width: 250px;
   }
+  .sidebarContainer {
+    width: 350px;
+  }
 }
 
 @media screen and (min-width: 1025px) {
@@ -184,6 +219,9 @@
   }
   .userSettingContainer {
     width: 300px;
+  }
+  .sidebarContainer {
+    width: 400px;
   }
 }
 

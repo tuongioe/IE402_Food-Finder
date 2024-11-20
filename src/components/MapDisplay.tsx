@@ -43,6 +43,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   const [center, setCenter] = React.useState(INITIAL_CENTER);
   const [zoom, setZoom] = React.useState(INITIAL_ZOOM);
   const [dataset, setDataset] = React.useState<Restaurant[]>([]);
+  const [selectedRestaurant, setSelectedRestaurant] = React.useState<Restaurant | null>(null);
 
   const getData = async () => {
     const { data, error } = await supabase
@@ -85,9 +86,6 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setCenter([mapCenter.lng, mapCenter.lat]);
       setZoom(mapZoom);
     });
-
-    // Manage popup
-    let currentPopup: mapboxgl.Popup | null = null;
 
     mapRef.current.on('load', () => {
       const geojsonData = {
@@ -143,24 +141,26 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       geocoder.on('result', (e) => {
         const selectedFeature = e.result;
 
-        if (currentPopup) {
-          currentPopup.remove(); // Remove existing popup if any
-        }
-
         if (selectedFeature && selectedFeature.geometry) {
           const { coordinates } = selectedFeature.geometry;
-          const { title, address, categoryName, phone, totalScore } = selectedFeature.properties;
-
-          currentPopup = new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setHTML(`
-              <strong>${title}</strong><br>
-              <em>Category:</em> ${categoryName || 'Not available'}<br>
-              <em>Address:</em> ${address || 'Not available'}<br>
-              <em>Phone:</em> ${phone || 'Not available'}<br>
-              ${totalScore ? `<strong>Rating:</strong> ${totalScore} ⭐<br>` : ''}
-            `)
-            .addTo(mapRef.current);
+          setSelectedRestaurant({
+            title: selectedFeature.properties.title,
+            price: selectedFeature.properties.price || null,
+            categoryName: selectedFeature.properties.categoryName || 'Not available',
+            address: selectedFeature.properties.address || 'Not available',
+            neighborhood: selectedFeature.properties.neighborhood || 'Not available',
+            street: selectedFeature.properties.street || 'Not available',
+            city: selectedFeature.properties.city || 'Not available',
+            state: selectedFeature.properties.state || 'Not available',
+            countryCode: selectedFeature.properties.countryCode || 'Not available',
+            phone: selectedFeature.properties.phone || 'Not available',
+            phoneUnformatted: selectedFeature.properties.phoneUnformatted || null,
+            latitude: coordinates[1],
+            longitude: coordinates[0],
+            plusCode: selectedFeature.properties.plusCode || '',
+            totalScore: selectedFeature.properties.totalScore || null,
+            imageUrl: selectedFeature.properties.imageUrl || '',
+          });
 
           mapRef.current.flyTo({
             center: coordinates,
@@ -168,14 +168,6 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
           });
         }
       });
-
-      mapRef.current.on('mouseenter', 'restaurant-layer', () => {
-        mapRef.current.getCanvas().style.cursor = 'pointer';
-      });
-
-      mapRef.current.on('mouseleave', 'restaurant-layer', () => {
-        mapRef.current.getCanvas().style.cursor = '';
-      })
 
       mapRef.current.addSource('restaurant', {
         type: 'geojson',
@@ -202,26 +194,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       });
 
       if (features.length) {
-        const feature = features[0];
-        const { title, price, categoryName, address, phone, imageUrl, totalScore } = feature.properties;
-
-        if (currentPopup) {
-          currentPopup.remove(); // Remove existing popup if any
-        }
-
-        const fallbackImageUrl = "https://via.placeholder.com/150";
-
-        currentPopup = new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(`
-              <strong>${title}</strong><br>
-            <em>Category:</em> ${categoryName || 'Not available'}<br>
-            <em>Price:</em> ${price || 'Not available'}<br>
-            <em>Address:</em> ${address || 'Not available'}<br>
-            <em>Phone:</em> ${phone || 'Not available'}<br>
-            ${totalScore ? `<strong>Rating:</strong> ${totalScore} ⭐<br>` : ''}
-          `)
-          .addTo(mapRef.current);
+        const feature = features[0].properties as Restaurant;
+        setSelectedRestaurant(feature);
       }
 
     });
@@ -294,6 +268,28 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             </div>
           </div>
         </div>
+        {selectedRestaurant &&
+          <div className={styles.sidebarContainer} id="sidebar">
+            <button
+              className={styles.closeButton}
+              onClick={() => setSelectedRestaurant(null)}
+            >X</button>
+            <div>
+              <h2>{selectedRestaurant.title}</h2>
+              <p>
+                <strong>Category:</strong> {selectedRestaurant.categoryName || 'Not available'}
+              </p>
+              <p>
+                <strong>Address:</strong> {selectedRestaurant.address || 'Not available'}
+              </p>
+              <p>
+                <strong>Phone:</strong> {selectedRestaurant.phone || 'Not available'}
+              </p>
+              <p>
+                <strong>Rating:</strong> {selectedRestaurant.totalScore || 'Not available'} ⭐
+              </p>
+            </div>
+          </div>}
       </div>
     </>);
 }
