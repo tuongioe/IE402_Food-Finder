@@ -1,13 +1,14 @@
 import React from 'react';
 import styles from '../styles/MapDisplay.module.css';
 import logo from '../assets/logo.png';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LoginState } from '../data/context';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import '../styles/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
+import '../styles/mapbox-gl-geocoder.css';
 import supabase from '../data/supabaseClient';
+import { FaBan, FaDirections } from 'react-icons/fa';
 
 interface Restaurant {
   title: string;
@@ -44,7 +45,15 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   const [center, setCenter] = React.useState(INITIAL_CENTER);
   const [zoom, setZoom] = React.useState(INITIAL_ZOOM);
   const [dataset, setDataset] = React.useState<Restaurant[]>([]);
+  const [isSelectedRestaurant, setIsSelectedRestaurant] = React.useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = React.useState<Restaurant | null>(null);
+  const [isShownDirection, setIsShownDirection] = React.useState(false);
+  const [directionDistance, setDirectionDistance] = React.useState({
+    unit: '',
+    distance: 0,
+  });
+  const geocoderRef = React.useRef<any | null>(null); //Search geocoder
+  const isDirectionActive = React.useRef(false);
 
   const getData = async () => {
     const { data, error } = await supabase
@@ -115,8 +124,9 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         }))
       };
 
+      /* ---- Search Bar ---- */
       // Add MapboxGeocoder with localGeocoder
-      const geocoder = new MapboxGeocoder({
+      geocoderRef.current = new MapboxGeocoder({
         accessToken: mapboxgl.accessToken,
         zoom: 14,
         placeholder: 'Search restaurant',
@@ -137,39 +147,79 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         mapboxgl: mapboxgl,
       });
 
-      mapRef.current.addControl(geocoder);
+      // Geocoder to return a restaurant search result
+      mapRef.current.addControl(geocoderRef.current, 'top-left');
 
-      geocoder.on('result', (e) => {
+      geocoderRef.current.on('result', (e) => {
         const selectedFeature = e.result;
 
         if (selectedFeature && selectedFeature.geometry) {
           const { coordinates } = selectedFeature.geometry;
           setSelectedRestaurant({
-            title: selectedFeature.properties.title,
-            price: selectedFeature.properties.price || null,
-            categoryName: selectedFeature.properties.categoryName || 'Not available',
-            address: selectedFeature.properties.address || 'Not available',
-            neighborhood: selectedFeature.properties.neighborhood || 'Not available',
-            street: selectedFeature.properties.street || 'Not available',
-            city: selectedFeature.properties.city || 'Not available',
-            state: selectedFeature.properties.state || 'Not available',
-            countryCode: selectedFeature.properties.countryCode || 'Not available',
-            phone: selectedFeature.properties.phone || 'Not available',
-            phoneUnformatted: selectedFeature.properties.phoneUnformatted || null,
+            title: selectedFeature.properties?.title || `Unknown location. Lat:${coordinates[1]} Long:${coordinates[0]}`,
+            price: selectedFeature.properties?.price || null,
+            categoryName: selectedFeature.properties?.categoryName || 'Not available',
+            address: selectedFeature.properties?.address || 'Not available',
+            neighborhood: selectedFeature.properties?.neighborhood || 'Not available',
+            street: selectedFeature.properties?.street || 'Not available',
+            city: selectedFeature.properties?.city || 'Not available',
+            state: selectedFeature.properties?.state || 'Not available',
+            countryCode: selectedFeature.properties?.countryCode || 'Not available',
+            phone: selectedFeature.properties?.phone || 'Not available',
+            phoneUnformatted: selectedFeature.properties?.phoneUnformatted || null,
             latitude: coordinates[1],
             longitude: coordinates[0],
-            plusCode: selectedFeature.properties.plusCode || '',
-            totalScore: selectedFeature.properties.totalScore || null,
-            imageUrl: selectedFeature.properties.imageUrl || '',
+            plusCode: selectedFeature.properties?.plusCode || '',
+            totalScore: selectedFeature.properties?.totalScore || null,
+            imageUrl: selectedFeature.properties?.imageUrl || '',
           });
+          setIsSelectedRestaurant(true);
 
           mapRef.current.flyTo({
             center: coordinates,
             zoom: 14,
           });
+
+          // Reset the color of all features in the layer to red
+          mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', 'red');
+
+          // Change the color of the selected restaurant
+          const selectedRestaurantId = selectedFeature.properties?.title;
+
+          if (selectedRestaurantId) {
+            // Check if the selected restaurant exists in the geojson data
+            const selectedFeatureExists = geojsonData.features.some((feature) => feature.properties.title === selectedRestaurantId);
+
+            if (selectedFeatureExists) {
+              // Apply the color logic if the selected restaurant exists in the dataset
+              mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', [
+                'case',
+                ['==', ['get', 'title'], selectedRestaurantId],
+                'blue', // Selected restaurant color
+                'red', // Default color for unselected restaurants
+              ]);
+            } else {
+              // If the selected restaurant doesn't exist in the dataset, reset the color to red
+              mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', 'red');
+              // Optionally, you could clear the selected restaurant info if needed:
+              setSelectedRestaurant(null);
+              setIsSelectedRestaurant(false);
+            }
+          }
         }
       });
 
+      // Event listener for the 'clear' event (when the search is cleared)
+      geocoderRef.current.on('clear', () => {
+        // Reset the color of all restaurants back to red
+        mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', 'red');
+
+        // Optionally, clear the selected restaurant state
+        setSelectedRestaurant(null);
+      });
+      /* ---- End Search Bar ---- */
+
+      /* ---- Add Dataset and Create Layer ---- */
       mapRef.current.addSource('restaurant', {
         type: 'geojson',
         data: geojsonData,
@@ -179,8 +229,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         type: 'circle',
         source: 'restaurant',
         paint: {
-          'circle-radius': 4,
-          'circle-stroke-width': 2,
+          'circle-radius': 6,
+          'circle-stroke-width': 3,
           'circle-color': 'red',
           'circle-stroke-color': 'white'
         }
@@ -189,10 +239,12 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setMapLoaded(true);
     });
 
+
     mapRef.current.on('click', 'restaurant-layer', (e: any) => {
       const features = mapRef.current.queryRenderedFeatures(e.point, {
         layers: ['restaurant-layer']
       });
+
 
       if (features.length) {
         const feature = features[0].properties as Restaurant;
@@ -200,7 +252,9 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       }
 
     });
+    /* ---- End Dataset and Create Layer ---- */
 
+    // Mouse event for hovering
     mapRef.current.on('mouseenter', 'restaurant-layer', () => {
       mapRef.current.getCanvas().style.cursor = 'pointer';
     });
@@ -209,6 +263,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       mapRef.current.getCanvas().style.cursor = '';
     });
 
+    // Displaying restaurant data when clicking
     mapRef.current.on('click', 'restaurant-layer', (e: mapboxgl.MapMouseEvent & mapboxgl.EventData) => {
       const features = mapRef.current.queryRenderedFeatures(e.point, {
         layers: ['restaurant-layer'],
@@ -237,15 +292,27 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         };
 
         setSelectedRestaurant(restaurant);
+        setIsSelectedRestaurant(true);
 
         mapRef.current.flyTo({
           center: [restaurant.longitude, restaurant.latitude],
-          zoom: 14,
         });
+
+        // Change the color of the selected restaurant
+        const selectedRestaurantId = feature.properties?.title;
+
+        // Change the paint property of the layer to apply a different color to the selected restaurant
+        mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', [
+          'case',
+          ['==', ['get', 'title'], selectedRestaurantId],
+          'blue', // Selected restaurant
+          'red', // Default color for unselected restaurants
+        ]);
+
       }
     });
 
-    // Add geolocate control to the map.
+    // Add geolocate control to the map. (Current user location)
     const geolocateControl = new mapboxgl.GeolocateControl({
       positionOptions: {
         enableHighAccuracy: true
@@ -270,7 +337,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   };
 
   // Fetch direction
-  const getDirections = async (latitude: number, longitude: number) => {
+  const getDirections = async () => {
     const geolocateControl = geolocateControlRef.current;
     if (!geolocateControl) {
       console.error('GeolocateControl not initialized');
@@ -280,18 +347,35 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     if (selectedRestaurant === null)
       return;
 
+    // Filter only the selected restaurant
+    mapRef.current.setFilter('restaurant-layer', ['==', ['get', 'title'], selectedRestaurant.title]);
+    isDirectionActive.current = true;
+
     const userLocation = await new Promise<[number, number]>((resolve, reject) => {
       geolocateControl.once('geolocate', (e) => {
+        if (!isDirectionActive.current) {
+          reject(new Error('Direction process canceled'));
+          return;
+        }
         resolve([e.coords.longitude, e.coords.latitude]);
       });
       geolocateControl.trigger(); // Trigger geolocation
+      setIsShownDirection(true);
     });
+
+    if (!userLocation || !isDirectionActive.current) return;
 
     const response = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation[0]},${userLocation[1]};${selectedRestaurant.longitude},${selectedRestaurant.latitude}?geometries=geojson&access_token=${apikey}`);
     const data = await response.json();
 
     if (data.routes && data.routes.length) {
       const route = data.routes[0].geometry;
+      const distanceInMeters = data.routes[0].distance;
+
+      setDirectionDistance({
+        unit: 'meters',
+        distance: distanceInMeters,
+      });
 
       // Add or update the route source
       if (mapRef.current?.getSource('route')) {
@@ -305,6 +389,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
           data: {
             type: 'Feature',
             geometry: route,
+            simlify: false,
           },
         });
 
@@ -323,6 +408,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         });
       }
 
+
       // Fit map bounds to route
       const bounds = new mapboxgl.LngLatBounds();
       route.coordinates.forEach(([lng, lat]: [number, number]) => bounds.extend([lng, lat]));
@@ -334,6 +420,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
 
   // Cancel direction
   const cancelDirections = () => {
+    isDirectionActive.current = false;
     if (mapRef.current) {
       // Check if the 'route' layer exists before trying to remove it
       if (mapRef.current.getLayer('route')) {
@@ -343,10 +430,20 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       if (mapRef.current.getSource('route')) {
         mapRef.current.removeSource('route');
       }
+      setIsShownDirection(false);
+      setDirectionDistance({ distance: 0, unit: '' });
+      if (!isSelectedRestaurant && selectedRestaurant) {
+        mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', [
+          'case',
+          ['==', ['get', 'title'], selectedRestaurant.title],
+          'red', // Selected restaurant
+          'red', // Default color for unselected restaurants
+        ]);
+        setSelectedRestaurant(null);
+      }
+      mapRef.current.setFilter('restaurant-layer', null);
     }
   };
-
-
 
   return (
     <>
@@ -361,7 +458,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         {/* Component Sections */}
         <div className={styles.componentContainer}>
           <div className={styles.topNav}>
-            <div className={styles.topLeftNav}>
+            <div className={styles.topRightNav}>
+              <img src={logo} className={styles.logoMap} />
               <span
                 onClick={() => {
                   setUserSetting(!userSetting);
@@ -369,7 +467,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                 className={styles.userSettingText}>{getFirstLetterUsername()}</span>
               {userSetting && <div className={styles.userSettingContainer}>
                 <p className={styles.userSettingHeader}>Hello, {localStorage.getItem('username')}</p>
-                <p className={styles.userSettingOption1}>Manage your account</p>
+                <p className={styles.userSettingOption1}><Link style={{ textDecoration: 'none', color: 'white' }} to="/account">Manage your account</Link></p>
                 <p
                   className={styles.userSettingOption2}
                   onClick={() => {
@@ -379,17 +477,30 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                     navigate("/");
                   }}>Log out</p>
               </div>}
-              <img src={logo} className={styles.logoMap} />
-            </div>
-            <div className={styles.topRightNav}>
             </div>
           </div>
         </div>
-        {selectedRestaurant &&
+        {selectedRestaurant && isSelectedRestaurant &&
           <div className={styles.sidebarContainer} id="sidebar">
             <button
               className={styles.closeButton}
-              onClick={() => setSelectedRestaurant(null)}
+              onClick={() => {
+                if (!isShownDirection) {
+                  if (mapRef.current) {
+                    mapRef.current.setPaintProperty('restaurant-layer', 'circle-color', [
+                      'case',
+                      ['==', ['get', 'title'], selectedRestaurant.title],
+                      'red',
+                      'red',
+                    ]);
+                  }
+                  if (geocoderRef.current) {
+                    geocoderRef.current.clear();
+                  }
+                  setSelectedRestaurant(null);
+                }
+                setIsSelectedRestaurant(false);
+              }}
             >X</button>
             <div>
               <h2>{selectedRestaurant.title}</h2>
@@ -405,20 +516,37 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
               <p>
                 <strong>Rating:</strong> {selectedRestaurant.totalScore || 'Not available'} ⭐
               </p>
-              <button
-                className={styles.directionButton}
-                onClick={() => { getDirections(selectedRestaurant.latitude, selectedRestaurant.longitude) }}
-              >
-                Directions
-              </button>
-              <button
-                className={styles.cancelDirections}
-                onClick={cancelDirections}
-              >
-                Cancel Directions
-              </button>
+              {
+                isShownDirection
+                  ?
+                  <button
+                    className={styles.cancelDirectionButton}
+                    onClick={cancelDirections}
+                  >
+                    <FaBan style={{ fontSize: 24 }} />
+                    <span>Cancel Directions</span>
+                  </button>
+                  :
+                  <button
+                    className={styles.directionButton}
+                    onClick={() => { getDirections() }}
+                  >
+                    <FaDirections style={{ fontSize: 24 }} />
+                    <span>Directions</span>
+                  </button>
+              }
             </div>
-          </div>}
+          </div>
+        }
+        {isShownDirection && <div className={styles.bottomDirectionBox}>
+          <span className={styles.bottomDirectionInfo}>From: <span className={styles.bottomDirectionLocation}>Your current location</span></span>
+          <span className={styles.bottomDirectionInfo}>To: <span className={styles.bottomDirectionLocation}>{selectedRestaurant?.title || selectedRestaurant?.address}</span></span>
+          <span className={styles.bottomDirectionInfo}>Distance: <span className={styles.bottomDirectionLocation}>{`${directionDistance.distance} ${directionDistance.unit}`}</span></span>
+          <button className={styles.bottomDirectionCancelButton} onClick={cancelDirections}>
+            <FaBan style={{ fontSize: 24 }} />
+            <span>Cancel Direction</span>
+          </button>
+        </div>}
       </div>
     </>);
 }

@@ -6,6 +6,8 @@ import { Route, Routes } from "react-router-dom";
 import { LoginState } from "./data/context";
 import NotFound404 from "./components/NotFound404";
 import MapDisplay from "./components/MapDisplay";
+import Dashboard from "./components/Dashboard";
+import Account from "./components/Account";
 
 // import supabase from "./data/supabaseClient";
 
@@ -26,9 +28,10 @@ function App() {
         <Routes>
           {isLoggedIn ?
             <>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/account" element={<Account />} />
               <Route path="/maps" element={<MapDisplay apikey={import.meta.env.VITE_MAPBOX_API_KEY} />} />
               <Route path="*" element={<NotFound404 />} />
-
             </>
             :
             <>

@@ -35,6 +35,7 @@
   width: 100%;
   position: fixed;
   z-index: 1;
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
 .logoMap {
@@ -48,20 +49,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.topLeftNav {
-  padding: 10px;
-  border-radius: 20px;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: row-reverse;
 }
 
 .topRightNav {
   padding: 10px;
   border-radius: 20px;
-  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -73,7 +67,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #ffffff;
+  background-color: #d9d9d9;
   border-radius: 100%;
   font-size: 24px;
   cursor: pointer;
@@ -88,7 +82,7 @@
   border-radius: 20px;
   margin-top: 5px;
   top: 85px;
-  left: 25px;
+  right: 25px;
 }
 
 .userSettingHeader {
@@ -129,25 +123,103 @@
 
 .sidebarContainer {
   width: 300px;
-  height: 90vh;
   top: 12vh;
   background-color: white;
   position: absolute;
   z-index: 1;
+  padding: 10px;
+  margin-left: 10px;
+  border-radius: 20px;
 }
 
 .closeButton {
-  position: inherit;
-  right: 0;
+  position: absolute;
+  right: -30px;
   border: none;
   background-color: transparent;
   font-size: 20px;
   cursor: pointer;
+  margin: 5px;
+  padding: 5px;
 }
 
 .closeButton:hover {
   opacity: 0.8;
   background-color: rgba(0, 0, 0, 0.2);
+}
+
+.directionButton {
+  display: flex;
+  background-color: black;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 20px;
+}
+
+.directionButton:hover {
+  opacity: 0.6;
+}
+
+.cancelDirectionButton {
+  display: flex;
+  background-color: red;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 20px;
+}
+
+.cancelDirectionButton:hover {
+  opacity: 0.6;
+}
+
+.bottomDirectionBox {
+  z-index: 1;
+  padding: 10px;
+  position: absolute;
+  background-color: white;
+  bottom: 0;
+  right: 50%;
+  transform: translate(50%, 0);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bottomDirectionCancelButton {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: red;
+  border: none;
+  border-radius: 20px;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.bottomDirectionCancelButton:hover {
+  opacity: 0.8;
+}
+
+.bottomDirectionInfo {
+  font-size: 16px;
+}
+
+.bottomDirectionLocation {
+  font-weight: bold;
 }
 
 @media screen and (min-width: 320px) {
@@ -162,6 +234,9 @@
   }
   .sidebarContainer {
     width: 200px;
+  }
+  .bottomDirectionBox {
+    width: 150px;
   }
 }
 
@@ -178,6 +253,9 @@
   .sidebarContainer {
     width: 250px;
   }
+  .bottomDirectionBox {
+    width: 200px;
+  }
 }
 
 @media screen and (min-width: 641px) {
@@ -193,6 +271,9 @@
   .sidebarContainer {
     width: 300px;
   }
+  .bottomDirectionBox {
+    width: 300px;
+  }
 }
 
 @media screen and (min-width: 961px) {
@@ -206,6 +287,9 @@
     width: 250px;
   }
   .sidebarContainer {
+    width: 350px;
+  }
+  .bottomDirectionBox {
     width: 350px;
   }
 }
