@@ -123,7 +123,8 @@
 
 .sidebarContainer {
   width: 300px;
-  top: 12vh;
+  top: 16vh;
+  height: 350px;
   background-color: white;
   position: absolute;
   z-index: 1;
@@ -134,18 +135,12 @@
 
 .closeButton {
   position: absolute;
-  right: -30px;
+  right: 0px;
   border: none;
   background-color: transparent;
   font-size: 20px;
   cursor: pointer;
-  margin: 5px;
-  padding: 5px;
-}
-
-.closeButton:hover {
-  opacity: 0.8;
-  background-color: rgba(0, 0, 0, 0.2);
+  top: 0px;
 }
 
 .directionButton {
@@ -159,10 +154,15 @@
   justify-content: center;
   gap: 5px;
   border-radius: 20px;
+  font-family: "Roboto", sans-serif;
+  width: 280px;
+  margin-left: 50px;
+  margin-top: 40px;
+  font-size: 16px;
 }
 
 .directionButton:hover {
-  opacity: 0.6;
+  filter: brightness(80%);
 }
 
 .cancelDirectionButton {
@@ -175,6 +175,11 @@
   justify-content: center;
   gap: 5px;
   border-radius: 20px;
+  font-family: "Roboto", sans-serif;
+  width: 280px;
+  margin-left: 50px;
+
+  font-size: 16px;
 }
 
 .cancelDirectionButton:hover {
@@ -186,7 +191,7 @@
   padding: 10px;
   position: absolute;
   background-color: white;
-  bottom: 0;
+  bottom: 15px;
   right: 50%;
   transform: translate(50%, 0);
   display: flex;
@@ -197,6 +202,8 @@
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+  border-radius: 19px;
+  font-family: "Roboto", sans-serif;
 }
 
 .bottomDirectionCancelButton {
@@ -316,4 +323,30 @@
   .searchBarInput {
     width: 400px;
   }
+}
+.restaurantName {
+  font-family: "Roboto", sans-serif;
+  padding-left: 10px;
+  font-size: 24px;
+}
+.restaurantCategory {
+  font-family: "Roboto", sans-serif;
+  padding-top: 20px;
+  padding-left: 10px;
+  font-size: 16px;
+}
+.restaurantAdress {
+  font-family: "Roboto", sans-serif;
+  padding-left: 10px;
+  font-size: 16px;
+}
+.restaurantPhone {
+  font-family: "Roboto", sans-serif;
+  padding-left: 10px;
+  font-size: 16px;
+}
+.restaurantRating {
+  font-family: "Roboto", sans-serif;
+  padding-left: 10px;
+  font-size: 16px;
 }
