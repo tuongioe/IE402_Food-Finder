@@ -1,0 +1,112 @@
+.container {
+  padding: 20px;
+  border: none;
+  margin-top: 80px;
+  margin-left: 270px;
+  width: 900px;
+  height: 520px;
+  border-radius: 19px;
+  background-image: linear-gradient(to right, #51a7bf, #daf4ff);
+}
+
+.header {
+  font-size: 24px;
+  margin-bottom: 20px;
+  font-family: "Roboto", sans-serif;
+}
+
+.layout {
+  display: flex;
+  gap: 20px;
+}
+
+.leftSection {
+  flex: 1;
+  border: none;
+  padding: 20px;
+  text-align: center;
+}
+
+.avatarContainer {
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+}
+
+.favoriteButton {
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: "Roboto", sans-serif;
+}
+
+.favoriteButton:hover {
+  background-color: #0056b3;
+}
+
+.favoriteLocation {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+}
+
+.rightSection {
+  flex: 2;
+  border: none;
+  padding: 20px;
+}
+
+.label {
+  display: block;
+  margin-top: 15px;
+  font-weight: bold;
+  font-family: "Roboto", sans-serif;
+}
+
+.inputField {
+  width: 400px;
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: "Roboto", sans-serif;
+}
+
+.buttonContainer {
+  margin-top: 10px;
+  margin-left: 210px;
+  text-align: center;
+}
+
+.button {
+  padding: 10px 20px;
+  margin-left: 10px;
+  background-image: linear-gradient(to right, #00717f, #00a8a8);
+  border-radius: 10px;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 150px;
+  font-family: "Roboto", sans-serif;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}
+
+.error {
+  color: red;
+  margin-bottom: 20px;
+}
+
+.mapIcon:hover {
+  filter: brightness(90%);
+}
