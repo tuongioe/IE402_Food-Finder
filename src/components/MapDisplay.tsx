@@ -579,6 +579,13 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             <div>
               <h2 className={styles.restaurantName}>
                 {selectedRestaurant.title}
+                <FaRegHeart
+                  style={{
+                    fontSize: 24,
+                    marginLeft: 20,
+                    marginTop: 20,
+                  }}
+                />
               </h2>
               <p className={styles.restaurantCategory}>
                 <strong>Category:</strong>{" "}
