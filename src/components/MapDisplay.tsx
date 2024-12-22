@@ -8,9 +8,12 @@ import "../styles/mapbox-gl.css";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import "../styles/mapbox-gl-geocoder.css";
 import supabase from "../data/supabaseClient";
-import { FaBan, FaDirections } from "react-icons/fa";
+import { FaBan, FaDirections, FaRegHeart } from "react-icons/fa";
 import { IoIosClose } from "react-icons/io";
 import { IoIosStar } from "react-icons/io";
+import { MdOutlineRestaurant } from "react-icons/md";
+import { FaLocationCrosshairs } from "react-icons/fa6";
+import { haversine } from "../func/nearbyLocation";
 interface Restaurant {
   title: string;
   price: string | null;
@@ -31,7 +34,7 @@ interface Restaurant {
 }
 
 const INITIAL_CENTER = [106.6707418, 10.8546639];
-const INITIAL_ZOOM = 10.12;
+const INITIAL_ZOOM = 12;
 
 export default function MapDisplay({ apikey }: { apikey: string }) {
   const navigate = useNavigate();
@@ -40,7 +43,6 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   const geolocateControlRef = React.useRef<mapboxgl.GeolocateControl | null>(
     null
   );
-  const [, setMapLoaded] = React.useState(false);
   const [userSetting, setUserSetting] = React.useState(false);
   const { setIsLoggedIn } = React.useContext(LoginState);
   const [center, setCenter] = React.useState(INITIAL_CENTER);
@@ -54,6 +56,19 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     unit: "",
     distance: 0,
   });
+  const [buttonSelectedMethod, setButtonSelectedMethod] = React.useState({
+    isSelectedAllLocation: true,
+    isSelectedNearbyRestaurant: false,
+    isSelectedFavoriteRestaurant: false,
+  });
+  const [nearbyRestaurant, setNearbyRestaurant] = React.useState<Restaurant[]>([]);
+  const [favoriteRestaurant, setFavoriteRestaurant] = React.useState<Restaurant[]>([]);
+  const [userLocation, setUserLocation] = React.useState<{ latitude: number | null, longitude: number | null }>({
+    latitude: 10.8805367,
+    longitude: 106.7611879,
+  })
+  const [userLocationRadius, setUserLocationRadius] = React.useState(5);
+
   const geocoderRef = React.useRef<any | null>(null); //Search geocoder
   const isDirectionActive = React.useRef(false);
 
@@ -67,17 +82,219 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     }
   };
 
+  const getFavoriteData = async () => {
+    const { data, error } = await supabase
+      .from('favouriteLocation')
+      .select(`
+        latitude, 
+        longitude,
+        gisdata (
+          latitude,
+          longitude,
+          *
+        )
+      `)
+      .eq('email', localStorage.getItem('email'));
+    if (error) {
+      console.error('Error fetching data:', error);
+      return null;
+    } else {
+      return data;
+    }
+  }
+
+  // Add/Rempve the restaurant
+  const roundToPrecision = (value: number, precision: number) => {
+    const factor = Math.pow(10, precision);
+    return Math.round(value * factor) / factor;
+  };
+
+  const addToFavorite = async (restaurant: Restaurant) => {
+    try {
+      const email = localStorage.getItem('email'); // Ensure user is logged in
+      if (!email) {
+        console.error("User is not logged in.");
+        return;
+      }
+
+      // Step 1: Normalize latitude and longitude precision
+      const normalizedLatitude = roundToPrecision(restaurant.latitude, 6); // Match the precision of gisdata
+      const normalizedLongitude = roundToPrecision(restaurant.longitude, 6);
+
+      // Step 2: Check if the restaurant exists in `gisdata`
+      const { data: gisdataRecord, error: gisdataError } = await supabase
+        .from('gisdata')
+        .select('latitude, longitude')
+        .eq('latitude', normalizedLatitude)
+        .eq('longitude', normalizedLongitude);
+
+      if (gisdataError) {
+        console.error("Error checking gisdata:", gisdataError);
+        return;
+      }
+
+      // Step 3: If not found in `gisdata`, insert it
+      if (!gisdataRecord || gisdataRecord.length === 0) {
+        const { error: insertGisdataError } = await supabase.from('gisdata').insert({
+          latitude: normalizedLatitude,
+          longitude: normalizedLongitude,
+          // Add any other necessary fields required by `gisdata`
+          title: restaurant.title,
+          price: restaurant.price,
+          categoryName: restaurant.categoryName,
+          address: restaurant.address,
+          neighborhood: restaurant.neighborhood,
+          street: restaurant.street,
+          city: restaurant.city,
+          state: restaurant.state,
+          countryCode: restaurant.countryCode,
+          phone: restaurant.phone,
+          phoneUnformatted: restaurant.phoneUnformatted,
+          totalScore: restaurant.totalScore,
+          imageUrl: restaurant.imageUrl,
+        });
+
+        if (insertGisdataError) {
+          console.error("Error inserting into gisdata:", insertGisdataError);
+          return;
+        }
+      }
+
+      // Step 4: Add to `favouriteLocation`
+      const { error } = await supabase.from('favouriteLocation').insert({
+        email,
+        latitude: normalizedLatitude,
+        longitude: normalizedLongitude,
+      });
+
+      if (error) {
+        console.error("Error adding to favorites:", error);
+      } else {
+        console.log("Added to favorites successfully.");
+
+        // Step 5: Update local state
+        setFavoriteRestaurant((prev) => [...prev, { ...restaurant, latitude: normalizedLatitude, longitude: normalizedLongitude }]);
+      }
+    } catch (err) {
+      console.error("Failed to add to favorites:", err);
+    }
+  };
+
+  const removeFromFavorite = async (restaurant: Restaurant) => {
+    try {
+      const userEmail = localStorage.getItem('email');
+      if (!userEmail) {
+        console.log('Missing email! Did you log in?');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('favouriteLocation')
+        .delete()
+        .eq('email', userEmail)
+        .eq('latitude', roundToPrecision(restaurant.latitude, 6))
+        .eq('longitude', roundToPrecision(restaurant.longitude, 6))
+
+      if (error) {
+        console.error('Error removing from favorites:', error);
+      }
+
+      setFavoriteRestaurant((prev) =>
+        prev.filter(
+          (fav) =>
+            roundToPrecision(fav.latitude, 6) !== roundToPrecision(restaurant.latitude, 6) ||
+            roundToPrecision(fav.longitude, 6) !== roundToPrecision(restaurant.longitude, 6)
+        )
+      );
+
+    }
+    catch (error) {
+      console.error('Error: ', error);
+    }
+  };
+
   // Fetch the data
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchFullData = async () => {
       const data = await getData();
       if (data) {
         setDataset(data as Restaurant[]);
       }
     };
 
-    fetchData();
+    const fetchFavoriteData = async () => {
+      const data = await getFavoriteData();
+      if (data) {
+        let packageData = [] as Restaurant[];
+        data.forEach((index) => {
+          packageData.push(index.gisdata)
+        })
+        setFavoriteRestaurant(packageData as Restaurant[])
+      }
+    }
+
+    fetchFavoriteData();
+    fetchFullData();
   }, []);
+
+  // Fetch nearby restaurant based on (1. Dataset, 2. Favorite Restaurant)
+  React.useEffect(() => {
+    const fetchNearbyRestaurant = (radius: number) => {
+      if (buttonSelectedMethod.isSelectedNearbyRestaurant) {
+        // Ensure the user's location is valid
+        if (userLocation.latitude === null || userLocation.longitude === null) {
+          console.error("User location is not available.");
+          return;
+        }
+
+        // If only Nearby is selected, filter from the full dataset
+        if (!buttonSelectedMethod.isSelectedFavoriteRestaurant) {
+          const nearby = dataset
+            .filter((restaurant) => {
+              const distance = haversine(
+                userLocation.latitude,
+                userLocation.longitude,
+                roundToPrecision(restaurant.latitude, 6),
+                roundToPrecision(restaurant.longitude, 6)
+              );
+              return distance <= radius; // Only include restaurants within the radius
+            })
+            .map((restaurant) => ({
+              ...restaurant,
+              latitude: roundToPrecision(restaurant.latitude, 6),
+              longitude: roundToPrecision(restaurant.longitude, 6),
+            })); // Round lat/lon in the resulting nearby list
+
+          setNearbyRestaurant(nearby); // Update the state with nearby restaurants
+        }
+        // If both Nearby and Favorite are selected, filter from favoriteRestaurant
+        else {
+          const nearbyFavorites = favoriteRestaurant.filter((restaurant) => {
+            const distance = haversine(
+              userLocation.latitude,
+              userLocation.longitude,
+              roundToPrecision(restaurant.latitude, 6),
+              roundToPrecision(restaurant.longitude, 6)
+            );
+            return distance <= radius; // Only include favorites within the radius
+          }).map((restaurant) => ({
+            ...restaurant,
+            latitude: roundToPrecision(restaurant.latitude, 6),
+            longitude: roundToPrecision(restaurant.longitude, 6),
+          })); // Round lat/lon in the resulting nearby list
+
+          setNearbyRestaurant(nearbyFavorites); // Update the state with nearby favorites
+        }
+      }
+      // Clear the nearbyRestaurant state if Nearby is not selected
+      else {
+        setNearbyRestaurant([]);
+      }
+    };
+
+    // Fetch nearby restaurants whenever buttonSelectedMethod or userLocationRadius changes
+    fetchNearbyRestaurant(userLocationRadius);
+  }, [buttonSelectedMethod, userLocationRadius]);
 
   React.useEffect(() => {
     mapboxgl.accessToken = apikey;
@@ -120,7 +337,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [restaurant.longitude, restaurant.latitude], // [longitude, latitude]
+              coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
             },
             properties: {
               title: restaurant.title,
@@ -141,6 +358,96 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         ),
       };
 
+      const geojsonFavoriteData = {
+        type: "FeatureCollection",
+        features: favoriteRestaurant.map(
+          (restaurant: {
+            longitude: any;
+            latitude: any;
+            title: any;
+            price: any;
+            categoryName: any;
+            address: any;
+            neighborhood: any;
+            street: any;
+            city: any;
+            state: any;
+            countryCode: any;
+            phone: any;
+            phoneUnformatted: any;
+            totalScore: any;
+            imageUrl: any;
+          }) => ({
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
+            },
+            properties: {
+              title: restaurant.title,
+              price: restaurant.price,
+              categoryName: restaurant.categoryName,
+              address: restaurant.address,
+              neighborhood: restaurant.neighborhood,
+              street: restaurant.street,
+              city: restaurant.city,
+              state: restaurant.state,
+              countryCode: restaurant.countryCode,
+              phone: restaurant.phone,
+              phoneUnformatted: restaurant.phoneUnformatted,
+              totalScore: restaurant.totalScore,
+              imageUrl: restaurant.imageUrl,
+            },
+          })
+        ),
+      };
+
+      let geojsonNearbyData;
+      if (nearbyRestaurant)
+        geojsonNearbyData = {
+          type: "FeatureCollection",
+          features: nearbyRestaurant.map(
+            (restaurant: {
+              longitude: any;
+              latitude: any;
+              title: any;
+              price: any;
+              categoryName: any;
+              address: any;
+              neighborhood: any;
+              street: any;
+              city: any;
+              state: any;
+              countryCode: any;
+              phone: any;
+              phoneUnformatted: any;
+              totalScore: any;
+              imageUrl: any;
+            }) => ({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
+              },
+              properties: {
+                title: restaurant.title,
+                price: restaurant.price,
+                categoryName: restaurant.categoryName,
+                address: restaurant.address,
+                neighborhood: restaurant.neighborhood,
+                street: restaurant.street,
+                city: restaurant.city,
+                state: restaurant.state,
+                countryCode: restaurant.countryCode,
+                phone: restaurant.phone,
+                phoneUnformatted: restaurant.phoneUnformatted,
+                totalScore: restaurant.totalScore,
+                imageUrl: restaurant.imageUrl,
+              },
+            })
+          ),
+        };
+
       /* ---- Search Bar ---- */
       // Add MapboxGeocoder with localGeocoder
       geocoderRef.current = new MapboxGeocoder({
@@ -155,9 +462,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
           return matchingFeatures.map((feature) => ({
             center: feature.geometry.coordinates,
             geometry: feature.geometry,
-            place_name: `${feature.properties.title} - ${
-              feature.properties.address || "Address not available"
-            }`,
+            place_name: `${feature.properties.title} - ${feature.properties.address || "Address not available"
+              }`,
             text: feature.properties.title,
             properties: feature.properties,
             type: "Feature",
@@ -263,23 +569,64 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       /* ---- End Search Bar ---- */
 
       /* ---- Add Dataset and Create Layer ---- */
-      mapRef.current.addSource("restaurant", {
-        type: "geojson",
-        data: geojsonData,
-      });
-      mapRef.current.addLayer({
-        id: "restaurant-layer",
-        type: "circle",
-        source: "restaurant",
-        paint: {
-          "circle-radius": 6,
-          "circle-stroke-width": 3,
-          "circle-color": "red",
-          "circle-stroke-color": "white",
-        },
-      });
-
-      setMapLoaded(true);
+      // Depend on the selection layer, we need to swap the layer
+      if (buttonSelectedMethod.isSelectedAllLocation &&
+        !buttonSelectedMethod.isSelectedFavoriteRestaurant &&
+        !buttonSelectedMethod.isSelectedNearbyRestaurant) {
+        mapRef.current.addSource("restaurant", {
+          type: "geojson",
+          data: geojsonData,
+        });
+        mapRef.current.addLayer({
+          id: "restaurant-layer",
+          type: "circle",
+          source: "restaurant",
+          paint: {
+            "circle-radius": 6,
+            "circle-stroke-width": 3,
+            "circle-color": "red",
+            "circle-stroke-color": "white",
+          },
+        });
+      }
+      else {
+        if (buttonSelectedMethod.isSelectedFavoriteRestaurant &&
+          !buttonSelectedMethod.isSelectedNearbyRestaurant
+        ) {
+          mapRef.current.addSource("restaurant", {
+            type: "geojson",
+            data: geojsonFavoriteData,
+          });
+          mapRef.current.addLayer({
+            id: "restaurant-layer",
+            type: "circle",
+            source: "restaurant",
+            paint: {
+              "circle-radius": 6,
+              "circle-stroke-width": 3,
+              "circle-color": "red",
+              "circle-stroke-color": "white",
+            },
+          });
+        }
+        else {
+          mapRef.current.addSource("restaurant", {
+            type: "geojson",
+            data: geojsonNearbyData,
+          });
+          mapRef.current.addLayer({
+            id: "restaurant-layer",
+            type: "circle",
+            source: "restaurant",
+            paint: {
+              "circle-radius": 6,
+              "circle-stroke-width": 3,
+              "circle-color": "red",
+              "circle-stroke-color": "white",
+            },
+          });
+        }
+      }
     });
 
     mapRef.current.on("click", "restaurant-layer", (e: any) => {
@@ -370,7 +717,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     return () => {
       mapRef.current.remove();
     };
-  }, [dataset]);
+  }, [dataset, favoriteRestaurant, nearbyRestaurant, buttonSelectedMethod]);
 
   // Gets the first letter from the username and capitalizes it
   const getFirstLetterUsername = () => {
@@ -404,6 +751,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             return;
           }
           resolve([e.coords.longitude, e.coords.latitude]);
+          setUserLocation({ latitude: e.coords.latitude, longitude: e.coords.longitude });
         });
         geolocateControl.trigger(); // Trigger geolocation
         setIsShownDirection(true);
@@ -510,6 +858,70 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         <div className={styles.componentContainer}>
           <div className={styles.topNav}>
             <div className={styles.topRightNav}>
+              <button
+                onClick={() => {
+                  const newFavoriteState = !buttonSelectedMethod.isSelectedFavoriteRestaurant;
+                  if (!newFavoriteState && !buttonSelectedMethod.isSelectedNearbyRestaurant) {
+                    setButtonSelectedMethod((prev) => ({
+                      ...prev,
+                      isSelectedAllLocation: true,
+                      isSelectedFavoriteRestaurant: !prev.isSelectedFavoriteRestaurant
+                    }))
+                    if (selectedRestaurant)
+                      setSelectedRestaurant(null);
+                  }
+                  else {
+                    setButtonSelectedMethod((prev) => ({
+                      ...prev,
+                      isSelectedAllLocation: false,
+                      isSelectedFavoriteRestaurant: !prev.isSelectedFavoriteRestaurant
+                    }))
+                    if (selectedRestaurant)
+                      setSelectedRestaurant(null);
+                  }
+                }}
+                className={styles.buttonCustomLocation}
+                style={{
+                  color: buttonSelectedMethod.isSelectedFavoriteRestaurant ? 'black' : 'white',
+                  backgroundColor: buttonSelectedMethod.isSelectedFavoriteRestaurant ? 'white' : 'black',
+                  border: buttonSelectedMethod.isSelectedFavoriteRestaurant ? '2px solid black' : '',
+                  fontWeight: buttonSelectedMethod.isSelectedFavoriteRestaurant ? 'bold' : 'normal'
+                }}
+              >
+                <MdOutlineRestaurant style={{ fontSize: 16 }} /> Favorite Restaurant
+              </button>
+              <button
+                onClick={() => {
+                  const newNearbyState = !buttonSelectedMethod.isSelectedNearbyRestaurant;
+                  if (!newNearbyState && !buttonSelectedMethod.isSelectedFavoriteRestaurant) {
+                    setButtonSelectedMethod((prev) => ({
+                      ...prev,
+                      isSelectedAllLocation: true,
+                      isSelectedNearbyRestaurant: !prev.isSelectedNearbyRestaurant
+                    }))
+                    if (selectedRestaurant)
+                      setSelectedRestaurant(null);
+                  }
+                  else {
+                    setButtonSelectedMethod((prev) => ({
+                      ...prev,
+                      isSelectedAllLocation: false,
+                      isSelectedNearbyRestaurant: !prev.isSelectedNearbyRestaurant
+                    }))
+                    if (selectedRestaurant)
+                      setSelectedRestaurant(null);
+                  }
+                }}
+                className={styles.buttonCustomLocation}
+                style={{
+                  color: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'black' : 'white',
+                  backgroundColor: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'white' : 'black',
+                  border: buttonSelectedMethod.isSelectedNearbyRestaurant ? '2px solid black' : '',
+                  fontWeight: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'bold' : 'normal'
+                }}
+              >
+                <FaLocationCrosshairs style={{ fontSize: 16 }} /> Nearby Location
+              </button>
               <img src={logo} className={styles.logoMap} />
               <span
                 onClick={() => {
@@ -524,19 +936,17 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                   <p className={styles.userSettingHeader}>
                     Hello, {localStorage.getItem("username")}
                   </p>
-                  <p className={styles.userSettingOption1}>
-                    <Link
-                      style={{ textDecoration: "none", color: "white" }}
-                      to="/account"
-                    >
-                      Manage your account
-                    </Link>
+                  <p className={styles.userSettingOption1}
+                    onClick={() => navigate('/account')}
+                  >
+                    Manage your account
                   </p>
                   <p
                     className={styles.userSettingOption2}
                     onClick={() => {
                       localStorage.removeItem("username");
                       localStorage.removeItem("isLoggedIn");
+                      localStorage.removeItem('email');
                       setIsLoggedIn(false);
                       navigate("/");
                     }}
@@ -576,34 +986,33 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             >
               <IoIosClose size={40} />
             </button>
-            <div>
+            <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center' }}>
               <h2 className={styles.restaurantName}>
                 {selectedRestaurant.title}
-                <FaRegHeart
-                  style={{
-                    fontSize: 24,
-                    marginLeft: 20,
-                    marginTop: 20,
-                  }}
-                />
               </h2>
-              <p className={styles.restaurantCategory}>
-                <strong>Category:</strong>{" "}
-                {selectedRestaurant.categoryName || "Not available"}
+              <p>
+                {"Lat: " + selectedRestaurant.latitude}
+                {"\nLong: " + selectedRestaurant.longitude}
               </p>
-              <p className={styles.restaurantAdress}>
-                <strong>Address:</strong>{" "}
-                {selectedRestaurant.address || "Not available"}
-              </p>
-              <p className={styles.restaurantPhone}>
-                <strong>Phone:</strong>{" "}
-                {selectedRestaurant.phone || "Not available"}
-              </p>
-              <p className={styles.restaurantRating}>
-                <strong>Rating:</strong>{" "}
-                {selectedRestaurant.totalScore || "Not available"}
-                <IoIosStar size={16} style={{ verticalAlign: "top" }} />
-              </p>
+              <div>
+                <p className={styles.restaurantCategory}>
+                  <strong>Category:</strong>{" "}
+                  {selectedRestaurant.categoryName || "Not available"}
+                </p>
+                <p className={styles.restaurantAdress}>
+                  <strong>Address:</strong>{" "}
+                  {selectedRestaurant.address || "Not available"}
+                </p>
+                <p className={styles.restaurantPhone}>
+                  <strong>Phone:</strong>{" "}
+                  {selectedRestaurant.phone || "Not available"}
+                </p>
+                <p className={styles.restaurantRating}>
+                  <strong>Rating:</strong>{" "}
+                  {selectedRestaurant.totalScore || "Not available"}
+                  <IoIosStar size={16} style={{ verticalAlign: "top" }} />
+                </p>
+              </div>
               {isShownDirection ? (
                 <button
                   className={styles.cancelDirectionButton}
@@ -623,6 +1032,40 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                   <span>Directions</span>
                 </button>
               )}
+              <button
+                className={styles.favoriteButton}
+                onClick={() => {
+                  if (!selectedRestaurant) return;
+
+                  const isFavorite = favoriteRestaurant.some(
+                    (fav) =>
+                      roundToPrecision(fav.latitude, 6) === roundToPrecision(selectedRestaurant.latitude, 6) &&
+                      roundToPrecision(fav.longitude, 6) === roundToPrecision(selectedRestaurant.longitude, 6)
+                  );
+
+                  if (isFavorite) {
+                    // Remove from favorites
+                    removeFromFavorite(selectedRestaurant);
+                  } else {
+                    // Add to favorites
+                    addToFavorite(selectedRestaurant);
+                  }
+                }}
+              >
+                {favoriteRestaurant.some(
+                  (fav) =>
+                    roundToPrecision(fav.latitude, 6) === roundToPrecision(selectedRestaurant.latitude, 6) &&
+                    roundToPrecision(fav.longitude, 6) === roundToPrecision(selectedRestaurant.longitude, 6)
+                ) ? (
+                  <>
+                    <FaRegHeart style={{ fontSize: 24 }} /> Remove From Favorite
+                  </>
+                ) : (
+                  <>
+                    <FaRegHeart style={{ fontSize: 24 }} /> Add To Favorite
+                  </>
+                )}
+              </button>
             </div>
           </div>
         )}

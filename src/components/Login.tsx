@@ -52,6 +52,7 @@ export default function Login() {
             const usernameField = data[0].username;
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("username", usernameField);
+            localStorage.setItem('email', fieldInput.email);
             setIsLoggedIn(true);
             // Save the info into the localStorage
             navigate("/maps");
