@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../styles/Account.module.css";
 import supabase from "../data/supabaseClient";
 import { FaMapLocationDot } from "react-icons/fa6";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaSignOutAlt } from "react-icons/fa";
+import { LoginState } from "../data/context";
+
+
 export default function Account() {
+  const navigate = useNavigate();
+  const { setIsLoggedIn } = React.useContext(LoginState);
   const [userData, setUserData] = useState({
     username: "",
     email: "",
@@ -12,7 +17,6 @@ export default function Account() {
     favorite_location: "",
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [showFavorite, setShowFavorite] = useState(false);
   const [error, setError] = useState("");
 
   const email = localStorage.getItem("email");
@@ -27,7 +31,7 @@ export default function Account() {
 
       const { data, error } = await supabase
         .from("authentication")
-        .select("username, email, password, favorite_location")
+        .select("username, email, password")
         .eq("email", email)
         .single();
 
@@ -54,7 +58,6 @@ export default function Account() {
       .update({
         username: userData.username,
         password: userData.password,
-        favorite_location: userData.favorite_location,
       })
       .eq("email", userData.email);
 
@@ -84,17 +87,6 @@ export default function Account() {
               className={styles.avatar}
             />
           </div>
-          <button
-            onClick={() => setShowFavorite(!showFavorite)}
-            className={styles.favoriteButton}
-          >
-            Favorite Location
-          </button>
-          {showFavorite && (
-            <div className={styles.favoriteLocation}>
-              {userData.favorite_location || "No favorite location set"}
-            </div>
-          )}
         </div>
 
         {/* Right Section */}
@@ -143,12 +135,15 @@ export default function Account() {
           </button>
         )}
       </div>
-      <Link className={styles.mapIcon} to="/">
-        <FaSignOutAlt
-          size={32}
-          style={{ marginTop: "10px", marginLeft: "850px", color: "#d92b04" }}
-        />
-      </Link>
+      <FaSignOutAlt
+        onClick={() => {
+          localStorage.removeItem("email");
+          localStorage.removeItem("username");
+          setIsLoggedIn(false);
+          navigate("/");
+        }}
+        size={32}
+        style={{ marginTop: "10px", marginLeft: "850px", color: "#d92b04", cursor: 'pointer' }} />
     </div>
   );
 }

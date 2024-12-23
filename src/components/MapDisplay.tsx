@@ -35,6 +35,7 @@ interface Restaurant {
 
 const INITIAL_CENTER = [106.6707418, 10.8546639];
 const INITIAL_ZOOM = 12;
+const INITIAL_RADIUS = 5;
 
 export default function MapDisplay({ apikey }: { apikey: string }) {
   const navigate = useNavigate();
@@ -63,11 +64,67 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
   });
   const [nearbyRestaurant, setNearbyRestaurant] = React.useState<Restaurant[]>([]);
   const [favoriteRestaurant, setFavoriteRestaurant] = React.useState<Restaurant[]>([]);
+  const [allowUserLocation, setAllowUserLocation] = React.useState(false);
   const [userLocation, setUserLocation] = React.useState<{ latitude: number | null, longitude: number | null }>({
-    latitude: 10.8805367,
-    longitude: 106.7611879,
+    latitude: null,
+    longitude: null,
   })
-  const [userLocationRadius, setUserLocationRadius] = React.useState(5);
+
+  const checkLocationPermission = async (): Promise<boolean> => {
+    if (!navigator.permissions || !navigator.geolocation) {
+      console.error("Geolocation or Permissions API is not supported in this browser.");
+      return false;
+    }
+
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: "geolocation" });
+
+      if (permissionStatus.state === "granted") {
+        console.log("Permission granted for location access.");
+
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              setAllowUserLocation(true);
+              setUserLocation({ latitude, longitude }); // Set the user's location
+              resolve(true);
+            },
+            (error) => {
+              console.error("Error getting location:", error);
+              resolve(false);
+            }
+          );
+        });
+      } else if (permissionStatus.state === "prompt") {
+        console.log("Permission is prompt. Asking for location access...");
+
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const { latitude, longitude } = position.coords;
+              console.log("Location access granted after prompt.");
+              setAllowUserLocation(true);
+              setUserLocation({ latitude, longitude }); // Set the user's location
+              resolve(true);
+            },
+            (error) => {
+              console.error("Location access denied after prompt.", error);
+              resolve(false);
+            }
+          );
+        });
+      } else {
+        console.error("Permission denied for location access.");
+        setAllowUserLocation(false);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking location permission:", error);
+      setAllowUserLocation(false);
+      return false;
+    }
+  };
 
   const geocoderRef = React.useRef<any | null>(null); //Search geocoder
   const isDirectionActive = React.useRef(false);
@@ -293,8 +350,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
     };
 
     // Fetch nearby restaurants whenever buttonSelectedMethod or userLocationRadius changes
-    fetchNearbyRestaurant(userLocationRadius);
-  }, [buttonSelectedMethod, userLocationRadius]);
+    fetchNearbyRestaurant(INITIAL_RADIUS);
+  }, [buttonSelectedMethod]);
 
   React.useEffect(() => {
     mapboxgl.accessToken = apikey;
@@ -891,25 +948,33 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                 <MdOutlineRestaurant style={{ fontSize: 16 }} /> Favorite Restaurant
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const newNearbyState = !buttonSelectedMethod.isSelectedNearbyRestaurant;
+
+                  if (newNearbyState) {
+                    // If enabling Nearby Location, check and get the user's location
+                    const hasAccess = await checkLocationPermission();
+                    if (!hasAccess) {
+                      console.error("Unable to access user location. Cannot enable Nearby Location.");
+                      return; // Exit early if location access is not granted
+                    }
+                  }
+
+                  // Update buttonSelectedMethod state
                   if (!newNearbyState && !buttonSelectedMethod.isSelectedFavoriteRestaurant) {
                     setButtonSelectedMethod((prev) => ({
                       ...prev,
                       isSelectedAllLocation: true,
-                      isSelectedNearbyRestaurant: !prev.isSelectedNearbyRestaurant
-                    }))
-                    if (selectedRestaurant)
-                      setSelectedRestaurant(null);
-                  }
-                  else {
+                      isSelectedNearbyRestaurant: false,
+                    }));
+                    if (selectedRestaurant) setSelectedRestaurant(null);
+                  } else {
                     setButtonSelectedMethod((prev) => ({
                       ...prev,
                       isSelectedAllLocation: false,
-                      isSelectedNearbyRestaurant: !prev.isSelectedNearbyRestaurant
-                    }))
-                    if (selectedRestaurant)
-                      setSelectedRestaurant(null);
+                      isSelectedNearbyRestaurant: newNearbyState,
+                    }));
+                    if (selectedRestaurant) setSelectedRestaurant(null);
                   }
                 }}
                 className={styles.buttonCustomLocation}
@@ -917,7 +982,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
                   color: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'black' : 'white',
                   backgroundColor: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'white' : 'black',
                   border: buttonSelectedMethod.isSelectedNearbyRestaurant ? '2px solid black' : '',
-                  fontWeight: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'bold' : 'normal'
+                  fontWeight: buttonSelectedMethod.isSelectedNearbyRestaurant ? 'bold' : 'normal',
                 }}
               >
                 <FaLocationCrosshairs style={{ fontSize: 16 }} /> Nearby Location
