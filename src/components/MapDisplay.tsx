@@ -175,8 +175,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       }
 
       // Step 1: Normalize latitude and longitude precision
-      const normalizedLatitude = roundToPrecision(restaurant.latitude, 6); // Match the precision of gisdata
-      const normalizedLongitude = roundToPrecision(restaurant.longitude, 6);
+      const normalizedLatitude = roundToPrecision(restaurant.latitude, 5); // Match the precision of gisdata
+      const normalizedLongitude = roundToPrecision(restaurant.longitude, 5);
 
       // Step 2: Check if the restaurant exists in `gisdata`
       const { data: gisdataRecord, error: gisdataError } = await supabase
@@ -249,8 +249,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         .from('favouriteLocation')
         .delete()
         .eq('email', userEmail)
-        .eq('latitude', roundToPrecision(restaurant.latitude, 6))
-        .eq('longitude', roundToPrecision(restaurant.longitude, 6))
+        .eq('latitude', roundToPrecision(restaurant.latitude, 5))
+        .eq('longitude', roundToPrecision(restaurant.longitude, 5))
 
       if (error) {
         console.error('Error removing from favorites:', error);
@@ -259,8 +259,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
       setFavoriteRestaurant((prev) =>
         prev.filter(
           (fav) =>
-            roundToPrecision(fav.latitude, 6) !== roundToPrecision(restaurant.latitude, 6) ||
-            roundToPrecision(fav.longitude, 6) !== roundToPrecision(restaurant.longitude, 6)
+            roundToPrecision(fav.latitude, 5) !== roundToPrecision(restaurant.latitude, 5) ||
+            roundToPrecision(fav.longitude, 5) !== roundToPrecision(restaurant.longitude, 5)
         )
       );
 
@@ -286,6 +286,10 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
         data.forEach((index) => {
           packageData.push(index.gisdata)
         })
+        packageData.map((restaurant) => ({
+          ...restaurant, latitude: roundToPrecision(restaurant.latitude, 5),
+          longitude: roundToPrecision(restaurant.longitude, 5),
+        }));
         setFavoriteRestaurant(packageData as Restaurant[])
       }
     }
@@ -311,15 +315,15 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
               const distance = haversine(
                 userLocation.latitude,
                 userLocation.longitude,
-                roundToPrecision(restaurant.latitude, 6),
-                roundToPrecision(restaurant.longitude, 6)
+                roundToPrecision(restaurant.latitude, 5),
+                roundToPrecision(restaurant.longitude, 5)
               );
               return distance <= radius; // Only include restaurants within the radius
             })
             .map((restaurant) => ({
               ...restaurant,
-              latitude: roundToPrecision(restaurant.latitude, 6),
-              longitude: roundToPrecision(restaurant.longitude, 6),
+              latitude: roundToPrecision(restaurant.latitude, 5),
+              longitude: roundToPrecision(restaurant.longitude, 5),
             })); // Round lat/lon in the resulting nearby list
 
           setNearbyRestaurant(nearby); // Update the state with nearby restaurants
@@ -330,14 +334,14 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             const distance = haversine(
               userLocation.latitude,
               userLocation.longitude,
-              roundToPrecision(restaurant.latitude, 6),
-              roundToPrecision(restaurant.longitude, 6)
+              roundToPrecision(restaurant.latitude, 5),
+              roundToPrecision(restaurant.longitude, 5)
             );
             return distance <= radius; // Only include favorites within the radius
           }).map((restaurant) => ({
             ...restaurant,
-            latitude: roundToPrecision(restaurant.latitude, 6),
-            longitude: roundToPrecision(restaurant.longitude, 6),
+            latitude: roundToPrecision(restaurant.latitude, 5),
+            longitude: roundToPrecision(restaurant.longitude, 5),
           })); // Round lat/lon in the resulting nearby list
 
           setNearbyRestaurant(nearbyFavorites); // Update the state with nearby favorites
@@ -394,7 +398,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
+              coordinates: [roundToPrecision(restaurant.longitude, 5), roundToPrecision(restaurant.latitude, 5)], // [longitude, latitude]
             },
             properties: {
               title: restaurant.title,
@@ -438,7 +442,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
             type: "Feature",
             geometry: {
               type: "Point",
-              coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
+              coordinates: [roundToPrecision(restaurant.longitude, 5), roundToPrecision(restaurant.latitude, 5)], // [longitude, latitude]
             },
             properties: {
               title: restaurant.title,
@@ -484,7 +488,7 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
               type: "Feature",
               geometry: {
                 type: "Point",
-                coordinates: [roundToPrecision(restaurant.longitude, 6), roundToPrecision(restaurant.latitude, 6)], // [longitude, latitude]
+                coordinates: [roundToPrecision(restaurant.longitude, 5), roundToPrecision(restaurant.latitude, 5)], // [longitude, latitude]
               },
               properties: {
                 title: restaurant.title,
@@ -1104,8 +1108,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
 
                   const isFavorite = favoriteRestaurant.some(
                     (fav) =>
-                      roundToPrecision(fav.latitude, 6) === roundToPrecision(selectedRestaurant.latitude, 6) &&
-                      roundToPrecision(fav.longitude, 6) === roundToPrecision(selectedRestaurant.longitude, 6)
+                      roundToPrecision(fav.latitude, 5) === roundToPrecision(selectedRestaurant.latitude, 5) &&
+                      roundToPrecision(fav.longitude, 5) === roundToPrecision(selectedRestaurant.longitude, 5)
                   );
 
                   if (isFavorite) {
@@ -1119,8 +1123,8 @@ export default function MapDisplay({ apikey }: { apikey: string }) {
               >
                 {favoriteRestaurant.some(
                   (fav) =>
-                    roundToPrecision(fav.latitude, 6) === roundToPrecision(selectedRestaurant.latitude, 6) &&
-                    roundToPrecision(fav.longitude, 6) === roundToPrecision(selectedRestaurant.longitude, 6)
+                    roundToPrecision(fav.latitude, 5) === roundToPrecision(selectedRestaurant.latitude, 5) &&
+                    roundToPrecision(fav.longitude, 5) === roundToPrecision(selectedRestaurant.longitude, 5)
                 ) ? (
                   <>
                     <FaRegHeart style={{ fontSize: 24 }} /> Remove From Favorite
